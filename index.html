@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nursing Heroes - Safety Program</title>
     
+    <!-- Libraries -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -33,6 +34,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        /* Custom transitions for background colors */
+        .theme-transition { transition: background-color 0.5s ease, border-color 0.5s ease; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 transition-colors duration-300">
@@ -51,9 +54,6 @@
                     return (
                         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-red-50 text-red-800 text-center">
                             <h1 className="text-2xl font-bold mb-4">عذراً، حدث خطأ تقني</h1>
-                            <div className="text-xs text-left bg-white p-2 rounded border border-red-200 mb-4">
-                                {this.state.error && this.state.error.toString()}
-                            </div>
                             <button onClick={() => window.location.reload()} className="bg-red-600 text-white px-6 py-3 rounded-lg font-bold">Reload Page</button>
                         </div>
                     );
@@ -62,14 +62,13 @@
             }
         }
 
-        // --- CORRECTED ICONS SECTION ---
+        // --- ICONS ---
         const IconBase = ({ children, size = 24, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {children}
             </svg>
         );
 
-        // ALL CLOSING TAGS FIXED TO </IconBase>
         const BookOpen = (props) => <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></IconBase>;
         const Shield = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" /></IconBase>;
         const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></IconBase>;
@@ -99,24 +98,25 @@
 
         // --- DATA ---
         const uiText = {
-            ar: { start_journey: "ابدأ رحلتك التعليمية", start_journey_en: "Start Your Learning Journey", hero_slogan: "أنت بطل السلامة", hero_slogan_en: "YOU ARE A SAFETY HERO", enter_details: "الرجاء إدخال بياناتك للبدء", name: "الاسم الثلاثي", id: "الرقم الوظيفي", dept: "القسم / الوحدة", start_btn: "تسجيل وبدء التحدي", pass_msg: "مبروك! ناجح", fail_msg: "للأسف، لم تتجاوز نسبة النجاح المطلوبة (85%)", retry: "إعادة الاختبار", next_section: "القسم التالي", cert_title: "شهادة بطل السلامة", cert_download: "استلام الشهادة", share_app: "مشاركة", analysis: "تحليل الأداء", feedback: "تفسير الإجابة", correct: "صحيحة", wrong: "خاطئة", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "الاختبار الشامل (للحصول على الشهادة)", back: "القائمة", next: "السؤال التالي", finish: "عرض النتيجة", score: "الدرجة", date: "التاريخ", resume_btn: "استكمال الاختبار السابق" },
+            ar: { start_journey: "ابدأ رحلتك التعليمية", start_journey_en: "Start Your Learning Journey", hero_slogan: "أنت بطل السلامة", hero_slogan_en: "YOU ARE A SAFETY HERO", enter_details: "الرجاء إدخال بياناتك للبدء", name: "الاسم الكامل (Full Name)", id: "الرقم الوظيفي (Employee ID)", dept: "القسم (Department)", start_btn: "تسجيل وبدء التحدي", pass_msg: "مبروك! ناجح", fail_msg: "للأسف، لم تتجاوز نسبة النجاح المطلوبة (85%)", retry: "إعادة الاختبار", next_section: "القسم التالي", cert_title: "شهادة بطل السلامة", cert_download: "استلام الشهادة", share_app: "مشاركة", analysis: "تحليل الأداء", feedback: "تفسير الإجابة", correct: "صحيحة", wrong: "خاطئة", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "الاختبار الشامل (للحصول على الشهادة)", back: "القائمة", next: "السؤال التالي", finish: "عرض النتيجة", score: "الدرجة", date: "التاريخ", resume_btn: "استكمال الاختبار السابق" },
             en: { start_journey: "Start Learning Journey", start_journey_en: "Start Your Learning Journey", hero_slogan: "YOU ARE A SAFETY HERO", hero_slogan_en: "أنت بطل السلامة", enter_details: "Enter your details", name: "Full Name", id: "Employee ID", dept: "Department", start_btn: "Register & Start", pass_msg: "Congratulations! Passed", fail_msg: "Sorry, Score below 85%", retry: "Retry Exam", next_section: "Next Section", cert_title: "Safety Hero Certificate", cert_download: "Get Certificate", share_app: "Share", analysis: "Analysis", feedback: "Explanation", correct: "Correct", wrong: "Wrong", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "Comprehensive Exam (Get Certificate)", back: "Menu", next: "Next", finish: "Show Result", score: "Score", date: "Date", resume_btn: "Resume Previous Quiz" },
             mix: { start_journey: "Start Journey / ابدأ", start_journey_en: "Start Your Learning Journey", hero_slogan: "YOU ARE A SAFETY HERO", hero_slogan_en: "أنت بطل السلامة", enter_details: "Enter Details / أدخل البيانات", name: "Name / الاسم", id: "ID / الرقم", dept: "Dept / القسم", start_btn: "Start / ابدأ", pass_msg: "Passed / ناجح", fail_msg: "Failed / راسب (<85%)", retry: "Retry / إعادة", next_section: "Next / التالي", cert_title: "Certificate / شهادة", cert_download: "Get Certificate / الشهادة", share_app: "Share", analysis: "Analysis", feedback: "Explanation", correct: "Correct", wrong: "Wrong", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "Comprehensive / شامل", back: "Menu / قائمة", next: "Next / التالي", finish: "Finish / إنهاء", score: "Score", date: "Date", resume_btn: "Resume / استكمال" }
         };
 
+        // Added calm background colors and tints for section separation
         const categories = [
-            { id: '1_patient_id', icon: <Stethoscope />, color: 'bg-blue-500', names: { ar: '1. تعريف المريض', en: '1. Patient ID', mix: '1. Patient ID' } },
-            { id: '2_safe_surgery', icon: <Activity />, color: 'bg-teal-500', names: { ar: '2. الجراحة الآمنة', en: '2. Safe Surgery', mix: '2. Safe Surgery' } },
-            { id: '3_credentialing', icon: <FileText />, color: 'bg-indigo-500', names: { ar: '3. التحقق من الشهادات', en: '3. Credentialing', mix: '3. Credentialing' } },
-            { id: '4_privileging', icon: <UserCheck />, color: 'bg-purple-500', names: { ar: '4. الامتيازات الطبية', en: '4. Privileging', mix: '4. Privileging' } },
-            { id: '5_blood', icon: <Droplet />, color: 'bg-rose-600', names: { ar: '5. نقل الدم الآمن', en: '5. Blood Transfusion', mix: '5. Blood Transfusion' } },
-            { id: '6_vte', icon: <Activity />, color: 'bg-cyan-600', names: { ar: '6. الوقاية من التجلط', en: '6. VTE Prevention', mix: '6. VTE Prevention' } },
-            { id: '7_high_alert', icon: <AlertTriangle />, color: 'bg-orange-500', names: { ar: '7. الأدوية عالية الخطورة', en: '7. High Alert Meds', mix: '7. High Alert Meds' } },
-            { id: '8_lasa_errors', icon: <Syringe />, color: 'bg-amber-500', names: { ar: '8. الأخطاء الدوائية', en: '8. LASA & Errors', mix: '8. LASA & Errors' } },
-            { id: '9_infection', icon: <Shield />, color: 'bg-green-600', names: { ar: '9. مكافحة العدوى', en: '9. Infection Control', mix: '9. Infection Control' } },
-            { id: '10_fms', icon: <Flame />, color: 'bg-red-600', names: { ar: '10. إدارة المرافق', en: '10. FMS & Safety', mix: '10. FMS & Safety' } },
-            { id: '11_med_gas', icon: <Wind />, color: 'bg-gray-600', names: { ar: '11. الغازات الطبية', en: '11. Medical Gases', mix: '11. Medical Gases' } },
-            { id: '12_radiation', icon: <Radio />, color: 'bg-yellow-600', names: { ar: '12. السلامة الإشعاعية', en: '12. Radiation Safety', mix: '12. Radiation Safety' } },
+            { id: '1_patient_id', icon: <Stethoscope />, color: 'bg-blue-500', bgColor: 'bg-blue-50', names: { ar: '1. تعريف المريض', en: '1. Patient ID', mix: '1. Patient ID' } },
+            { id: '2_safe_surgery', icon: <Activity />, color: 'bg-teal-500', bgColor: 'bg-teal-50', names: { ar: '2. الجراحة الآمنة', en: '2. Safe Surgery', mix: '2. Safe Surgery' } },
+            { id: '3_credentialing', icon: <FileText />, color: 'bg-indigo-500', bgColor: 'bg-indigo-50', names: { ar: '3. التحقق من الشهادات', en: '3. Credentialing', mix: '3. Credentialing' } },
+            { id: '4_privileging', icon: <UserCheck />, color: 'bg-purple-500', bgColor: 'bg-purple-50', names: { ar: '4. الامتيازات الطبية', en: '4. Privileging', mix: '4. Privileging' } },
+            { id: '5_blood', icon: <Droplet />, color: 'bg-rose-600', bgColor: 'bg-rose-50', names: { ar: '5. نقل الدم الآمن', en: '5. Blood Transfusion', mix: '5. Blood Transfusion' } },
+            { id: '6_vte', icon: <Activity />, color: 'bg-cyan-600', bgColor: 'bg-cyan-50', names: { ar: '6. الوقاية من التجلط', en: '6. VTE Prevention', mix: '6. VTE Prevention' } },
+            { id: '7_high_alert', icon: <AlertTriangle />, color: 'bg-orange-500', bgColor: 'bg-orange-50', names: { ar: '7. الأدوية عالية الخطورة', en: '7. High Alert Meds', mix: '7. High Alert Meds' } },
+            { id: '8_lasa_errors', icon: <Syringe />, color: 'bg-amber-500', bgColor: 'bg-amber-50', names: { ar: '8. الأخطاء الدوائية', en: '8. LASA & Errors', mix: '8. LASA & Errors' } },
+            { id: '9_infection', icon: <Shield />, color: 'bg-green-600', bgColor: 'bg-green-50', names: { ar: '9. مكافحة العدوى', en: '9. Infection Control', mix: '9. Infection Control' } },
+            { id: '10_fms', icon: <Flame />, color: 'bg-red-600', bgColor: 'bg-red-50', names: { ar: '10. إدارة المرافق', en: '10. FMS & Safety', mix: '10. FMS & Safety' } },
+            { id: '11_med_gas', icon: <Wind />, color: 'bg-gray-600', bgColor: 'bg-gray-100', names: { ar: '11. الغازات الطبية', en: '11. Medical Gases', mix: '11. Medical Gases' } },
+            { id: '12_radiation', icon: <Radio />, color: 'bg-yellow-600', bgColor: 'bg-yellow-50', names: { ar: '12. السلامة الإشعاعية', en: '12. Radiation Safety', mix: '12. Radiation Safety' } },
         ];
 
         // --- FULL 101 QUESTIONS DATABASE ---
@@ -263,7 +263,7 @@
                 <div className="absolute inset-4 border-4 border-[#C5A059] pointer-events-none"></div>
                 <div className="absolute inset-6 border-2 border-[#1a365d] pointer-events-none"></div>
                 <div className="text-center space-y-2 mb-12 mt-8 z-10">
-                    <h1 className="text-3xl font-bold text-[#1a365d] tracking-wide uppercase border-b-2 border-[#C5A059] pb-2 px-8">PRINCE SULTAN ARMED FORCES HOSPITAL</h1>
+                    <h1 className="text-3xl font-bold text-[#1a365d] tracking-wide uppercase border-b-2 border-[#C5A059] pb-2 px-8">PRINCE SULTAN ARMED FORCES HOSPITAL-MADINAH</h1>
                     <h2 className="text-xl font-bold text-[#2d3748] tracking-wider">NURSING ADMINISTRATION</h2>
                     <h3 className="text-lg font-bold text-[#C5A059] tracking-widest">NURSING EDUCATION AND STAFF DEVELOPMENT</h3>
                 </div>
@@ -271,12 +271,18 @@
                     <Award size={80} className="w-20 h-20 text-[#C5A059] mx-auto mb-6" />
                     <h1 className="text-5xl font-bold text-[#1a365d] mb-4 uppercase tracking-widest">Certificate of Achievement</h1>
                     <p className="text-xl text-gray-600 italic mb-8">This certificate is proudly presented to</p>
-                    <h2 className="text-4xl font-bold text-black border-b-2 border-gray-300 inline-block pb-2 px-12 mb-6">{user.name}</h2>
-                    <div className="flex justify-center gap-12 text-lg text-gray-800 mb-8 font-sans">
-                        <p><strong>ID:</strong> {user.id}</p>
-                        <p><strong>Department:</strong> {user.dept}</p>
+                    <h2 className="text-4xl font-bold text-black border-b-2 border-gray-300 inline-block pb-2 px-12 mb-6 uppercase">{user.name}</h2>
+                    <div className="flex justify-center items-center gap-20 text-xl text-gray-800 mb-8 font-sans mt-6 w-full px-10">
+                        <div className="flex flex-col items-center border-b-2 border-gray-300 pb-1 min-w-[200px]">
+                            <span className="text-sm text-gray-500 uppercase tracking-wider mb-1">Employee ID</span>
+                            <span className="font-bold">{user.id}</span>
+                        </div>
+                        <div className="flex flex-col items-center border-b-2 border-gray-300 pb-1 min-w-[200px]">
+                            <span className="text-sm text-gray-500 uppercase tracking-wider mb-1">Department</span>
+                            <span className="font-bold uppercase">{user.dept}</span>
+                        </div>
                     </div>
-                    <p className="text-2xl text-gray-700 leading-relaxed max-w-4xl mx-auto px-8">
+                    <p className="text-2xl text-gray-700 leading-relaxed max-w-4xl mx-auto px-8 mt-4">
                         For successfully completing the <br/><span className="font-bold text-[#1a365d]">Safety Hero Program Comprehensive Exam</span><br/>
                         demonstrating exceptional knowledge in Essential Safety Requirements.
                     </p>
@@ -332,9 +338,13 @@
                 <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}>
                     <div className="text-center mb-8"><User size={48} className="w-12 h-12 mx-auto mb-2 text-blue-500" /><h2 className="text-2xl font-bold">{t.enter_details}</h2></div>
                     <div className="space-y-4">
-                        <div><label className="block text-sm font-medium mb-1 flex items-center gap-2"><User size={16}/> {t.name}</label><input type="text" value={userInfo.name} onChange={(e) => { const val = e.target.value; if (/^[a-zA-Z\u0600-\u06FF\s\u0621-\u064A]*$/.test(val)) setUserInfo({...userInfo, name: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="Enter full name" /></div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 flex items-center gap-2"><User size={16}/> {t.name}</label>
+                            <input type="text" value={userInfo.name} onChange={(e) => { const val = e.target.value.toUpperCase(); if (/^[A-Z\s]*$/.test(val)) setUserInfo({...userInfo, name: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 uppercase" placeholder="FULL NAME (ENGLISH)" />
+                            <p className="text-xs text-red-500 mt-1 font-bold">يجب كتابة الاسم باللغة الإنجليزية (CAPITAL LETTERS) ليظهر بشكل صحيح في الشهادة</p>
+                        </div>
                         <div><label className="block text-sm font-medium mb-1 flex items-center gap-2"><Hash size={16}/> {t.id}</label><input type="text" value={userInfo.id} onChange={(e) => { const val = e.target.value; if (/^[0-9]*$/.test(val)) setUserInfo({...userInfo, id: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="12345" inputMode="numeric" /></div>
-                        <div><label className="block text-sm font-medium mb-1 flex items-center gap-2"><Building size={16}/> {t.dept}</label><input type="text" value={userInfo.dept} onChange={(e) => { const val = e.target.value; if (/^[a-zA-Z\u0600-\u06FF\s\u0621-\u064A]*$/.test(val)) setUserInfo({...userInfo, dept: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="ER, ICU, etc." /></div>
+                        <div><label className="block text-sm font-medium mb-1 flex items-center gap-2"><Building size={16}/> {t.dept}</label><input type="text" value={userInfo.dept} onChange={(e) => { const val = e.target.value.toUpperCase(); setUserInfo({...userInfo, dept: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 uppercase" placeholder="ER, ICU, etc." /></div>
                         <button disabled={!userInfo.name || !userInfo.id || !userInfo.dept} onClick={onNext} className="w-full py-3 mt-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition">{t.start_btn}</button>
                     </div>
                 </div>
@@ -347,8 +357,14 @@
                 <Globe size={64} className="w-16 h-16 mb-6 text-blue-500 animate-spin-slow" />
                 <h2 className="text-2xl font-bold mb-8">Select Language / اختر اللغة</h2>
                 <div className="grid gap-4 w-full max-w-sm">
-                    <button onClick={() => {setLanguage('ar'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">العربية</span> <span className="text-2xl">🇸🇦</span></button>
-                    <button onClick={() => {setLanguage('en'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">English</span> <span className="text-2xl">🇺🇸</span></button>
+                    <button onClick={() => {setLanguage('ar'); onNext();}} className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg hover:scale-105 transition flex justify-between items-center border-2 border-green-600 group">
+                        <span className="font-bold text-xl text-green-700 group-hover:text-green-800">العربية</span> 
+                        <div className="flex flex-col items-center"><span className="text-4xl">🇸🇦</span><span className="text-xs font-bold text-green-600 mt-1">Saudi Arabia</span></div>
+                    </button>
+                    <button onClick={() => {setLanguage('en'); onNext();}} className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg hover:scale-105 transition flex justify-between items-center border-2 border-blue-600 group">
+                        <span className="font-bold text-xl text-blue-700 group-hover:text-blue-800">English</span> 
+                        <div className="flex flex-col items-center"><span className="text-4xl">🇺🇸</span><span className="text-xs font-bold text-blue-600 mt-1">USA</span></div>
+                    </button>
                     <button onClick={() => {setLanguage('mix'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">مدمج / Mixed</span> <span className="text-2xl">🔄</span></button>
                 </div>
             </div>
@@ -368,11 +384,16 @@
                     </button>
                     {overallTotal > 0 && (<div className="mb-4 p-4 bg-blue-50 dark:bg-slate-800 rounded-xl border border-blue-200 text-center"><p className="text-sm text-gray-500">Current Session Cumulative Score</p><p className="text-xl font-bold text-blue-600">{overallScore} / {overallTotal} ({Math.round((overallScore/overallTotal)*100)}%)</p></div>)}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {categories.map((cat) => (
-                            <button key={cat.id} onClick={() => { setExamMode('single'); setGameData({ score: 0, total: 0, incorrectQuestions: [] }); setActiveCategory(cat.id); setGameState('playing'); }} className={`${cat.color} text-white p-4 rounded-xl shadow-md hover:scale-105 transition flex flex-col items-center justify-center gap-3 h-32 relative overflow-hidden`}>
-                                <div className="bg-white/20 p-2 rounded-full">{cat.icon}</div><span className="font-bold text-sm text-center">{cat.names[language]}</span>
-                            </button>
-                        ))}
+                        {categories.map((cat) => {
+                            const qCount = questionsDatabase.filter(q => q.category === cat.id).length;
+                            return (
+                                <button key={cat.id} onClick={() => { setExamMode('single'); setGameData({ score: 0, total: 0, incorrectQuestions: [] }); setActiveCategory(cat.id); setGameState('playing'); }} className={`${cat.color} text-white p-4 rounded-xl shadow-md hover:scale-105 transition flex flex-col items-center justify-center gap-2 h-36 relative overflow-hidden`}>
+                                    <div className="bg-white/20 p-2 rounded-full">{cat.icon}</div>
+                                    <span className="font-bold text-sm text-center leading-tight">{cat.names[language]}</span>
+                                    <span className="absolute bottom-2 right-2 bg-black/20 text-xs px-2 py-0.5 rounded-full font-mono">{qCount} Qs</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -388,6 +409,17 @@
             useEffect(() => { const savedState = { currentQIndex, score: localGameData.score, total: localGameData.total, activeCategory, gameState: 'playing', language }; localStorage.setItem('nursingHeroState', JSON.stringify(savedState)); }, [currentQIndex, localGameData, activeCategory, language]);
 
             const currentQ = questions[currentQIndex];
+            
+            // --- DYNAMIC BACKGROUND LOGIC ---
+            const currentCategoryConfig = useMemo(() => {
+                if (!currentQ) return null;
+                return categories.find(c => c.id === currentQ.category);
+            }, [currentQ]);
+
+            const bgClass = currentCategoryConfig ? currentCategoryConfig.bgColor : (darkMode ? 'bg-slate-900' : 'bg-slate-50');
+            const headerColor = currentCategoryConfig ? currentCategoryConfig.color.replace('bg-', 'text-') : 'text-blue-600';
+            // ----------------------------------
+
             if (!currentQ || questions.length === 0) { return (<div className={`min-h-screen flex flex-col items-center justify-center p-8 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`} dir={dir}><h1 className="text-2xl font-bold text-red-500 mb-4">Error: No Questions Found</h1><button onClick={onBack} className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">{t.back}</button></div>); }
             const content = currentQ.content[language];
 
@@ -405,16 +437,23 @@
             };
 
             return (
-                <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} dir={dir}>
-                    <div className="p-4 flex justify-between items-center bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-20"><button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"><Home size={20} /></button><div className="font-bold">{t.score}: {localGameData.score} / {currentQIndex + (isAnswered ? 1 : 0)}</div><div className="text-sm opacity-60">Q: {currentQIndex + 1}/{questions.length}</div></div>
-                    <div className="w-full bg-gray-200 h-2 dark:bg-slate-700"><div className="bg-blue-500 h-2 transition-all duration-500" style={{ width: `${((currentQIndex + (isAnswered ? 1 : 0)) / questions.length) * 100}%` }}></div></div>
+                <div className={`min-h-screen flex flex-col theme-transition ${darkMode ? 'bg-slate-900 text-white' : bgClass} ${!darkMode ? 'text-slate-900' : ''}`} dir={dir}>
+                    <div className={`p-4 flex justify-between items-center bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-20 border-b-4 ${currentCategoryConfig ? currentCategoryConfig.color.replace('bg-', 'border-') : 'border-blue-500'}`}>
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"><Home size={20} /></button>
+                        <div className="font-bold">{t.score}: {localGameData.score} / {currentQIndex + (isAnswered ? 1 : 0)}</div>
+                        <div className="text-sm opacity-60 flex items-center gap-2">
+                            {currentCategoryConfig && <span className={`text-xs px-2 py-1 rounded-full text-white ${currentCategoryConfig.color}`}>{currentCategoryConfig.names[language]}</span>}
+                            <span>Q: {currentQIndex + 1}/{questions.length}</span>
+                        </div>
+                    </div>
+                    <div className="w-full bg-gray-200 h-2 dark:bg-slate-700"><div className={`h-2 transition-all duration-500 ${currentCategoryConfig ? currentCategoryConfig.color : 'bg-blue-500'}`} style={{ width: `${((currentQIndex + (isAnswered ? 1 : 0)) / questions.length) * 100}%` }}></div></div>
                     <div className="flex-grow flex flex-col items-center p-4 max-w-3xl mx-auto w-full">
                         <div className={`w-full p-6 rounded-2xl shadow-lg mb-6 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-                            <h2 className="text-xl font-bold mb-6 leading-relaxed">{content.q}</h2>
-                            <div className="space-y-3">{content.opts.map((opt, idx) => { let btnStyle = darkMode ? "bg-slate-700 hover:bg-slate-600" : "bg-gray-50 hover:bg-blue-50 border-gray-200"; if (isAnswered) { if (idx === currentQ.correct) btnStyle = "bg-green-100 text-green-800 border-green-500 dark:bg-green-900 dark:text-green-100"; else if (idx === selectedOption) btnStyle = "bg-red-100 text-red-800 border-red-500 dark:bg-red-900 dark:text-red-100"; else btnStyle = "opacity-50 cursor-not-allowed"; } return (<button key={idx} onClick={() => handleAnswer(idx)} disabled={isAnswered} className={`w-full p-4 rounded-xl border-2 text-start transition-all flex justify-between items-center ${btnStyle}`}><span>{opt}</span>{isAnswered && idx === currentQ.correct && <CheckCircle size={20} className="text-green-600" />}{isAnswered && idx === selectedOption && idx !== currentQ.correct && <XCircle size={20} className="text-red-600" />}</button>) })}</div>
-                            {isAnswered && (<div className={`mt-6 p-4 rounded-xl border-l-4 border-blue-500 animate-slide-up ${darkMode ? 'bg-slate-700' : 'bg-blue-50'}`}><h3 className="font-bold flex items-center gap-2 text-blue-600 dark:text-blue-300"><BookOpen size={18}/> {t.feedback}</h3><p className="mt-1 opacity-90">{content.exp}</p></div>)}
+                            <h2 className={`text-xl font-bold mb-6 leading-relaxed ${darkMode ? 'text-white' : headerColor}`}>{content.q}</h2>
+                            <div className="space-y-3">{content.opts.map((opt, idx) => { let btnStyle = darkMode ? "bg-slate-700 hover:bg-slate-600" : "bg-white hover:bg-gray-50 border-gray-200"; if (isAnswered) { if (idx === currentQ.correct) btnStyle = "bg-green-100 text-green-800 border-green-500 dark:bg-green-900 dark:text-green-100"; else if (idx === selectedOption) btnStyle = "bg-red-100 text-red-800 border-red-500 dark:bg-red-900 dark:text-red-100"; else btnStyle = "opacity-50 cursor-not-allowed"; } return (<button key={idx} onClick={() => handleAnswer(idx)} disabled={isAnswered} className={`w-full p-4 rounded-xl border-2 text-start transition-all flex justify-between items-center ${btnStyle}`}><span>{opt}</span>{isAnswered && idx === currentQ.correct && <CheckCircle size={20} className="text-green-600" />}{isAnswered && idx === selectedOption && idx !== currentQ.correct && <XCircle size={20} className="text-red-600" />}</button>) })}</div>
+                            {isAnswered && (<div className={`mt-6 p-4 rounded-xl border-l-4 ${currentCategoryConfig ? currentCategoryConfig.color.replace('bg-', 'border-') : 'border-blue-500'} animate-slide-up ${darkMode ? 'bg-slate-700' : 'bg-white/50'}`}><h3 className={`font-bold flex items-center gap-2 ${darkMode ? 'text-blue-300' : headerColor}`}><BookOpen size={18}/> {t.feedback}</h3><p className="mt-1 opacity-90">{content.exp}</p></div>)}
                         </div>
-                        {isAnswered && (<button onClick={handleNext} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 hover:scale-[1.02] transition mb-10">{currentQIndex < questions.length - 1 ? t.next : t.finish}</button>)}
+                        {isAnswered && (<button onClick={handleNext} className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg hover:scale-[1.02] transition mb-10 ${currentCategoryConfig ? currentCategoryConfig.color : 'bg-blue-600'}`}>{currentQIndex < questions.length - 1 ? t.next : t.finish}</button>)}
                     </div>
                 </div>
             );
