@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nursing Heroes - Safety Program</title>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;800&family=Playfair+Display:wght@400;700&display=swap');
+        body { font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .animate-bounce-slow { animation: bounce 3s infinite; }
+        .font-serif-en { font-family: 'Playfair Display', serif; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(-5%); }
+            50% { transform: translateY(0); }
+        }
+        /* Print styles for certificate */
+        @media print {
+            body * { visibility: hidden; }
+            #certificate-view, #certificate-view * { visibility: visible; }
+            #certificate-view { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                height: 100%; 
+                margin: 0; 
+                padding: 0; 
+                border: none;
+                background: white;
+                z-index: 9999;
+            }
+            @page { margin: 0; size: landscape; }
+        }
+        
+        /* Custom Gradients */
+        .text-gradient-magic {
+            background: linear-gradient(to right, #6366f1, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // ==========================================
+        // ERROR BOUNDARY
+        // ==========================================
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error: error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error("App Error:", error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-red-50 text-red-800 text-center">
+                            <h1 className="text-2xl font-bold mb-4">عذراً، حدث خطأ غير متوقع</h1>
+                            <p className="mb-4">Sorry, an unexpected error occurred.</p>
+                            <div className="text-xs text-left bg-white p-2 rounded border border-red-200 mb-4">
+                                {this.state.error && this.state.error.toString()}
+                            </div>
+                            <button onClick={() => window.location.reload()} className="bg-red-600 text-white px-6 py-3 rounded-lg font-bold">
+                                إعادة تحميل الصفحة (Reload)
+                            </button>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
+        // ==========================================
+        // ICONS (Includes all used icons)
+        // ==========================================
+        const IconBase = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+        // Defined BookOpen for correct usage (Fix 1)
+        const BookOpen = (props) => <IconBase {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></IconBase>;
+        
+        const Shield = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" /></IconBase>;
+        const AlertTriangle = (props) => <IconBase {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></IconBase>;
+        const Activity = (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></IconBase>;
+        const Droplet = (props) => <IconBase {...props}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.74.96.5 1.84.88 2.22.43 1.1-.63 2.5-2.74 2.75-4.66 0 0-3-3.92 5.3-7.23L12 2 2 14a10 10 0 0 0 10 8" /></Droplet>;
+        const Flame = (props) => <IconBase {...props}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.6-3.3.7 3.5 2.9 3.8 2.9 3.8Z" /></Flame>;
+        const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></IconBase>;
+        const XCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></IconBase>;
+        const Trophy = (props) => <IconBase {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17" /><path d="M14 14.66V17" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /><path d="M8.5 22v-2.07c.2.01.41.07.6.07h5.8c.19 0 .4-.06.6-.07V22" /></Trophy>;
+        const Home = (props) => <IconBase {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></IconBase>;
+        const ArrowRight = (props) => <IconBase {...props}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></IconBase>;
+        const Stethoscope = (props) => <IconBase {...props}><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" /><path d="M8 15v6" /><path d="M16 15v6" /><circle cx="12" cy="22" r="2" /></Stethoscope>;
+        const Globe = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" /><path d="M2 12h20" /></IconBase>;
+        const FileText = (props) => <IconBase {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></FileText>;
+        const UserCheck = (props) => <IconBase {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></UserCheck>;
+        const Syringe = (props) => <IconBase {...props}><path d="m18 2 4 4" /><path d="m17 7 3-3" /><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5" /><path d="m9 11 4 4" /><path d="m5 19-3 3" /><path d="m14 4 6 6" /></Syringe>;
+        const Wind = (props) => <IconBase {...props}><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" /><path d="M9.6 4.6A2 2 0 1 1 11 8H2" /><path d="M12.6 19.4A2 2 0 1 0 14 16H2" /><path d="M12 12H2" /></Wind>;
+        const Radio = (props) => <IconBase {...props}><circle cx="12" cy="12" r="2" /><path d="M16.24 7.76a6 6 0 0 1 0 8.49" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></Radio>;
+        const Moon = (props) => <IconBase {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></Moon>;
+        const Sun = (props) => <IconBase {...props}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></IconBase>;
+        const Printer = (props) => <IconBase {...props}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect width="12" height="8" x="6" y="14" /></Printer>;
+        const Award = (props) => <IconBase {...props}><circle cx="12" cy="8" r="7" /><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" /></Award>;
+        const User = (props) => <IconBase {...props}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></User>;
+        const Hash = (props) => <IconBase {...props}><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></IconBase>;
+        const PlayCircle = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" /></IconBase>;
+        const Building = (props) => <IconBase {...props}><rect width="16" height="20" x="4" y="2" rx="2" ry="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01" /><path d="M16 6h.01" /><path d="M12 6h.01" /><path d="M12 10h.01" /><path d="M12 14h.01" /><path d="M16 10h.01" /><path d="M16 14h.01" /><path d="M8 10h.01" /><path d="M8 14h.01" /></Building>;
+
+        // ==========================================
+        // DATA
+        // ==========================================
+        const uiText = {
+            ar: { start_journey: "ابدأ رحلتك التعليمية", start_journey_en: "Start Your Learning Journey", hero_slogan: "أنت بطل السلامة", hero_slogan_en: "YOU ARE A SAFETY HERO", enter_details: "الرجاء إدخال بياناتك للبدء", name: "الاسم الثلاثي", id: "الرقم الوظيفي", dept: "القسم / الوحدة", start_btn: "تسجيل وبدء التحدي", pass_msg: "مبروك! ناجح", fail_msg: "للأسف، لم تتجاوز نسبة النجاح المطلوبة (85%)", retry: "إعادة الاختبار", next_section: "القسم التالي", cert_title: "شهادة بطل السلامة", cert_download: "استلام الشهادة", share_app: "مشاركة", analysis: "تحليل الأداء", feedback: "تفسير الإجابة", correct: "صحيحة", wrong: "خاطئة", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "الاختبار الشامل (للحصول على الشهادة)", back: "القائمة", next: "السؤال التالي", finish: "عرض النتيجة", score: "الدرجة", date: "التاريخ", resume_btn: "استكمال الاختبار السابق" },
+            en: { start_journey: "Start Learning Journey", start_journey_en: "Start Your Learning Journey", hero_slogan: "YOU ARE A SAFETY HERO", hero_slogan_en: "أنت بطل السلامة", enter_details: "Enter your details", name: "Full Name", id: "Employee ID", dept: "Department", start_btn: "Register & Start", pass_msg: "Congratulations! Passed", fail_msg: "Sorry, Score below 85%", retry: "Retry Exam", next_section: "Next Section", cert_title: "Safety Hero Certificate", cert_download: "Get Certificate", share_app: "Share", analysis: "Analysis", feedback: "Explanation", correct: "Correct", wrong: "Wrong", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "Comprehensive Exam (Get Certificate)", back: "Menu", next: "Next", finish: "Show Result", score: "Score", date: "Date", resume_btn: "Resume Previous Quiz" },
+            mix: { start_journey: "Start Journey / ابدأ", start_journey_en: "Start Your Learning Journey", hero_slogan: "YOU ARE A SAFETY HERO", hero_slogan_en: "أنت بطل السلامة", enter_details: "Enter Details / أدخل البيانات", name: "Name / الاسم", id: "ID / الرقم", dept: "Dept / القسم", start_btn: "Start / ابدأ", pass_msg: "Passed / ناجح", fail_msg: "Failed / راسب (<85%)", retry: "Retry / إعادة", next_section: "Next / التالي", cert_title: "Certificate / شهادة", cert_download: "Get Certificate / الشهادة", share_app: "Share", analysis: "Analysis", feedback: "Explanation", correct: "Correct", wrong: "Wrong", hospital_name: "PRINCE SULTAN ARMED FORCES HOSPITAL - MADINAH", admin_name: "NURSING ADMINISTRATION", edu_name: "NURSING EDUCATION AND STAFF DEVELOPMENT", mixed_exam: "Comprehensive / شامل", back: "Menu / قائمة", next: "Next / التالي", finish: "Finish / إنهاء", score: "Score", date: "Date", resume_btn: "Resume / استكمال" }
+        };
+
+        const categories = [
+            { id: '1_patient_id', icon: <Stethoscope />, color: 'bg-blue-500', names: { ar: '1. تعريف المريض', en: '1. Patient ID', mix: '1. Patient ID' } },
+            { id: '2_safe_surgery', icon: <Activity />, color: 'bg-teal-500', names: { ar: '2. الجراحة الآمنة', en: '2. Safe Surgery', mix: '2. Safe Surgery' } },
+            { id: '3_credentialing', icon: <FileText />, color: 'bg-indigo-500', names: { ar: '3. التحقق من الشهادات', en: '3. Credentialing', mix: '3. Credentialing' } },
+            { id: '4_privileging', icon: <UserCheck />, color: 'bg-purple-500', names: { ar: '4. الامتيازات الطبية', en: '4. Privileging', mix: '4. Privileging' } },
+            { id: '5_blood', icon: <Droplet />, color: 'bg-rose-600', names: { ar: '5. نقل الدم الآمن', en: '5. Blood Transfusion', mix: '5. Blood Transfusion' } },
+            { id: '6_vte', icon: <Activity />, color: 'bg-cyan-600', names: { ar: '6. الوقاية من التجلط', en: '6. VTE Prevention', mix: '6. VTE Prevention' } },
+            { id: '7_high_alert', icon: <AlertTriangle />, color: 'bg-orange-500', names: { ar: '7. الأدوية عالية الخطورة', en: '7. High Alert Meds', mix: '7. High Alert Meds' } },
+            { id: '8_lasa_errors', icon: <Syringe />, color: 'bg-amber-500', names: { ar: '8. الأخطاء الدوائية', en: '8. LASA & Errors', mix: '8. LASA & Errors' } },
+            { id: '9_infection', icon: <Shield />, color: 'bg-green-600', names: { ar: '9. مكافحة العدوى', en: '9. Infection Control', mix: '9. Infection Control' } },
+            { id: '10_fms', icon: <Flame />, color: 'bg-red-600', names: { ar: '10. إدارة المرافق', en: '10. FMS & Safety', mix: '10. FMS & Safety' } },
+            { id: '11_med_gas', icon: <Wind />, color: 'bg-gray-600', names: { ar: '11. الغازات الطبية', en: '11. Medical Gases', mix: '11. Medical Gases' } },
+            { id: '12_radiation', icon: <Radio />, color: 'bg-yellow-600', names: { ar: '12. السلامة الإشعاعية', en: '12. Radiation Safety', mix: '12. Radiation Safety' } },
+        ];
+
+        const questionsDatabase = [
+            // --- 1. Patient ID (9 Questions) ---
+            { category: '1_patient_id', correct: 1, content: { ar: { q: 'ما هي المعرفات التي يجب استخدامها للتعريف بالمريض؟', opts: ['رقم الغرفة ورقم السرير', 'الاسم الثلاثي ورقم الملف الطبي', 'اسم المريض وعمره', 'رقم الهوية فقط'], exp: 'يجب استخدام معرفين اثنين على الأقل: الاسم الثلاثي ورقم الملف الطبي.' }, en: { q: 'What are the identifiers used to identify the patient correctly?', opts: ['Room & Bed Number', 'Three Full Names & Medical Record Number', 'Patient Name & Age', 'ID Number only'], exp: 'By using at least two identifiers: Patient\'s full name (Three Full Name) and Medical Record Number.' }, mix: { q: 'ما هي المعرفات الصحيحة (Identifiers)؟', opts: ['Room & Bed Number', 'الاسم الثلاثي (3 Names) & رقم الملف (MRN)', 'Name & Age', 'ID only'], exp: 'يجب استخدام معرفين (Two Identifiers): الاسم الثلاثي (Full Name) ورقم الملف الطبي (MRN).' } }},
+            { category: '1_patient_id', correct: 2, content: { ar: { q: 'متى يجب تعريف المريض؟', opts: ['عند الدخول فقط', 'عند الخروج فقط', 'قبل تقديم العلاج، التحاليل، الإجراءات، أو تقديم الطعام', 'عند الزيارة'], exp: 'قبل تقديم العلاج، قبل الفحوصات، قبل أي إجراءات، وقبل تقديم وجبات الطعام.' }, en: { q: 'When to identify the patient?', opts: ['Admission only', 'Discharge only', 'Before providing Treatments, Investigation, Procedures, or Serving diet', 'During visits'], exp: 'Before providing Treatments, Before performing Investigation, Before any Procedures, Before Serving diet tray.' }, mix: { q: 'متى يتم تعريف المريض (When to identify)؟', opts: ['Admission only', 'Discharge', 'قبل العلاج (Treatment)، الإجراءات (Procedures)، الطعام (Diet)', 'Visits'], exp: 'قبل تقديم العلاج (Treatments)، التحاليل (Investigation)، الإجراءات (Procedures)، وتقديم الطعام (Diet).' } }},
+            { category: '1_patient_id', correct: 3, content: { ar: { q: 'ما هي الأدوات المستخدمة لتعريف المريض؟', opts: ['سوار التعريف (للمنومين ومرضى الطوارئ مع إجراءات)', 'الهوية الوطنية/الإقامة وبطاقة الموعد (للعيادات)', 'الاسم الكامل ورقم الملف (على جميع النماذج)', 'جميع ما سبق'], exp: 'تشمل الأدوات: سوار التعريف للمرضى المنومين ومرضى الطوارئ (إجراءات)، الهوية الوطنية لمرضى العيادات، ويتم تعريف النماذج بالاسم الكامل ورقم الملف.' }, en: { q: 'What are the used tools for identifying patient?', opts: ['ID wrist band (Admitted & ER with procedures)', 'National ID/Iqama & slip (OPD & ER no procedures)', 'Full Name & MRN (All Patient Forms)', 'All of the above'], exp: 'Tools include: ID wrist band for admitted/ER procedure patients, National ID/Appointment slip for OPD, and Full Name & MRN on all forms.' }, mix: { q: 'أدوات تعريف المريض (Patient ID Tools)؟', opts: ['ID wrist band (Admitted)', 'National ID/Iqama (OPD)', 'Forms (Name & MRN)', 'All of the above (جميع ما سبق)'], exp: 'تشمل الأدوات: ID band للمنومين، National ID للعيادات، و Full Name/MRN للنماذج.' } }},
+            { category: '1_patient_id', correct: 1, content: { ar: { q: 'ماذا يجب فعله إذا رفض المريض ارتداء سوار التعريف؟', opts: ['إجبار المريض على ارتدائه', 'شرح المخاطر وتوثيق النقاش والأسباب في الملاحظات', 'إبلاغ الطبيب فقط وتجاهل الأمر', 'ترك المريض بدون تعريف'], exp: 'يجب إبلاغ المريض بالمخاطر المحتملة لعدم ارتداء السوار. ويجب توثيق النقاش وأسباب الرفض بوضوح في ملاحظات التمريض/الملف الطبي.' }, en: { q: 'What must be done if Patient is Reluctant to wear ID Band?', opts: ['Force the patient to wear it', 'Inform potential Risk & Document discussion/reasons', 'Tell doctor only', 'Leave patient without ID'], exp: 'Inform the potential Risk of not wearing an ID Band. The discussion and reasons for the patient not wearing must be clearly documented in patient’s Clinical /Nurses Progress note.' }, mix: { q: 'رفض المريض لبس السوار (Reluctant to wear ID Band)؟', opts: ['Force him', 'Explain Risks & Document (شرح وتوثيق)', 'Tell Doctor only', 'Ignore'], exp: 'Inform risks & Document in notes (شرح المخاطر وتوثيق الأسباب في الملف).' } }},
+            { category: '1_patient_id', correct: 0, content: { ar: { q: 'كيف يتم تعريف حديثي الولادة (Neonates)؟', opts: ['3 أساور (رسغ + كاحل أيمن + كاحل أيسر)', 'سوار واحد', 'سوارين في اليدين', 'كتابة الاسم على السرير'], exp: 'باستخدام 3 أساور: واحدة على الرسغ واثنتان على الكاحلين (الأيمن والأيسر).' }, en: { q: 'How to identify a newborn?', opts: ['3 ID bands (Wrist + Right Ankle + Left Ankle)', 'One ID band', 'Two wrist bands', 'Name on bed'], exp: 'By Three ID bands: (1st ID) on the right ankle, (2nd ID) left ankle, and (3rd ID) on the wrist.' }, mix: { q: 'تعريف حديثي الولادة (Neonates)؟', opts: ['3 أساور (3 ID bands)', 'One Band', 'Two Bands', 'Label'], exp: '3 أساور: رسغ (Wrist) + كاحل أيمن (Right Ankle) + كاحل أيسر (Left Ankle).' } }},
+            { category: '1_patient_id', correct: 1, content: { ar: { q: 'كيف يتم توثيق التوائم المتعددة؟', opts: ['بأسماء الأب', 'التوأم 1، التوأم 2 ...', 'توأم أ، توأم ب', 'لا يوجد فرق'], exp: 'بالنسبة للتوأم يتم توثيقه بالتوأم 1 والتوأم 2. في حالة ثلاثة توائم: 1، 2، 3.' }, en: { q: 'How will you Document in case of Multiple Pregnancies?', opts: ['Father Name', 'Twin 1, Twin 2 ...', 'Twin A, Twin B', 'No difference'], exp: 'For Twin Baby it is Documented as Twin1 Twin2. In Case of Triplet: Triplet 1, Triplet 2, Triplet 3.' }, mix: { q: 'توثيق التوائم (Multiple Pregnancies)؟', opts: ['Father Name', 'Twin 1, Twin 2 ...', 'Twin A, B', 'None'], exp: 'يتم التوثيق بـ Twin 1, Twin 2 وهكذا.' } }},
+            { category: '1_patient_id', correct: 1, content: { ar: { q: 'كيف يتم تعريف مريض غير معروف أو فاقد للوعي في الطوارئ؟', opts: ['باسم المرافق', 'باستخدام رموز (xxx1, xxx2)', 'بدون اسم', 'برقم الغرفة'], exp: 'يجب أن يكتب على اسورة التعريف xxx1, xxx2 وهكذا.' }, en: { q: 'How will you identify an unknown/Unconscious Patient in A&E?', opts: ['By attendant name', 'Using codes (xxx1, xxx2)', 'No name', 'Room number'], exp: 'The ID Band should state "xxx 1", "xxx 2" and so on.' }, mix: { q: 'تعريف مريض مجهول (Unknown Patient)؟', opts: ['Attendant', 'رموز (xxx1, xxx2)', 'No name', 'Room #'], exp: 'يتم استخدام رموز مثل "xxx 1", "xxx 2".' } }},
+            { category: '1_patient_id', correct: 0, content: { ar: { q: 'ماذا تفعل في حال تشابه الأسماء في نفس القسم؟', opts: ['استخدام ملصق "High Alert" وبطاقة تنبيه ومعرف إضافي', 'نقل المريض', 'تغيير السرير', 'لا شيء'], exp: 'يتم استخدام ملصقات "High Alert"، وضع بطاقة تنبيه على السرير، التنبيه عند التسليم، واستخدام معرف إضافي.' }, en: { q: 'Action for similar names in same unit?', opts: ['Use "High Alert" stickers, bed card, extra identifier', 'Transfer patient', 'Change bed', 'Nothing'], exp: 'Use "High Alert" Stickers, "High Alert" Card on bed, highlight at handover, Use of additional identifier.' }, mix: { q: 'تشابه الأسماء (Similar Names)؟', opts: ['ملصق "High Alert" + Extra ID', 'Transfer', 'Change bed', 'None'], exp: 'استخدام ملصق "High Alert" ومعرف إضافي (Extra Identifier).' } }},
+            { category: '1_patient_id', correct: 2, content: { ar: { q: 'ما الذي يجب عدم استخدامه أبداً لتعريف المريض؟', opts: ['الاسم', 'رقم الملف', 'رقم الغرفة أو السرير', 'تاريخ الميلاد'], exp: 'يجب عدم استخدام رقم الغرفة أو المكان أو رقم السرير.' }, en: { q: 'What must NOT be used in Patients Identification?', opts: ['Name', 'MRN', 'Room/Bed Number', 'Birthdate'], exp: 'Patient\'s Room, Location, Bed Number.' }, mix: { q: 'ممنوع استخدامه للتعريف (Must NOT use)؟', opts: ['Name', 'MRN', 'رقم الغرفة/السرير (Room/Bed #)', 'Birthdate'], exp: 'يمنع استخدام رقم الغرفة أو السرير (Room/Bed Number).' } }},
+
+            // --- 2. Safe Surgery (14 Questions) ---
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'ما هي القائمة المرجعية قبل الجراحة (Preoperative Checklist)؟', opts: ['نموذج للتأكد من المريض الصحيح، الإجراء الصحيح، المكان الصحيح، وجاهزية المريض قبل النقل للعمليات', 'نموذج لطلب الأدوات الجراحية', 'نموذج للخروج من المستشفى', 'قائمة بالأطباء المناوبين'], exp: 'تستخدم للتأكد من المريض الصحيح للإجراء الصحيح والمكان الصحيح وجاهزية المريض العامة قبل نقله إلى غرفة العمليات.' }, en: { q: 'What is preoperative checklist?', opts: ['Form to ensure correct patient, procedure, site & readiness prior to transfer to OR', 'Surgical instrument request form', 'Discharge form', 'On-call doctor list'], exp: 'Used to ensure correct patient for correct procedure and correct site and over all readiness of the patient prior to transfer to operating theatre.' }, mix: { q: 'ما هو الـ Preoperative Checklist؟', opts: ['Ensure correct patient/site/readiness (تأكد من الجاهزية)', 'Instrument request', 'Discharge form', 'On-call list'], exp: 'نموذج لضمان جاهزية المريض والمكان والإجراء الصحيح قبل النقل للعمليات.' } }},
+            { category: '2_safe_surgery', correct: 1, content: { ar: { q: 'من يبدأ القائمة المرجعية قبل الجراحة ومتى؟', opts: ['الجراح قبل العملية', 'الممرضة المسؤولة (Primary Nurse) - مساءً قبل العملية (المجدولة) أو نفس اليوم (لجراحات اليوم/الطوارئ)', 'طبيب التخدير في الإفاقة', 'موظف الاستقبال عند الدخول'], exp: 'تبدأها الممرضة المسؤولة (Primary Nurse). للحالات المجدولة: اليوم/المساء قبل الجراحة. لجراحات اليوم الواحد والطوارئ: في نفس اليوم.' }, en: { q: 'Who starts the preoperative checklist and when?', opts: ['Surgeon before surgery', 'Primary Nurse - Day/evening before (elective) OR Same day (Day case/Emergency)', 'Anesthesiologist in recovery', 'Receptionist at admission'], exp: 'Initiated by primary nurse. Elective: Day/evening before. Day case/Emergency: Same day.' }, mix: { q: 'من يبدأ الـ Checklist ومتى؟', opts: ['Surgeon', 'Primary Nurse (Before surgery/Same day)', 'Anesthesiologist', 'Receptionist'], exp: 'الممرضة المسؤولة (Primary Nurse) في اليوم السابق أو نفس يوم العملية.' } }},
+            { category: '2_safe_surgery', correct: 3, content: { ar: { q: 'ما هي مكونات القائمة المرجعية قبل الجراحة؟', opts: ['تعريف المريض، الإقرارات، الإجراء المخطط، علامة المكان', 'منتجات الدم، الصيام (NPO)، تحضير الجلد، التحاليل والأشعة', 'التاريخ الطبي، الأدوية، تقييم التخدير، المجوهرات/العدسات', 'جميع ما سبق'], exp: 'تشمل: تعريف المريض، الإقرارات، الإجراء، العلامة، الدم، الصيام، الجلد، التحاليل، التاريخ، الأدوية، تقييم التخدير، والمجوهرات/العدسات.' }, en: { q: 'What are the components of the preoperative checklist?', opts: ['ID, Consents, Procedure, Site marking', 'Blood, NPO, Skin prep, Labs/Radiology', 'History, Meds, Anesthesia assessment, Jewellery/Lens', 'All of the above'], exp: 'Includes: Patient ID, Consents, Procedure, Site marking, Blood, NPO, Skin, Labs, History, Pre-op meds, Pre-anesthesia, Jewellery/Lens.' }, mix: { q: 'مكونات الـ Preoperative Checklist؟', opts: ['ID, Consents, Site marking', 'Blood, NPO, Skin, Labs', 'History, Meds, Anesthesia', 'All of the above (جميع ما سبق)'], exp: 'تشمل جميع العناصر المذكورة (ID, Consents, Site, Blood, NPO, etc.).' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'ما هي أداة التسليم والتسلم المستخدمة بين ممرضات الجناح وغرفة العمليات؟', opts: ['قائمة التدقيق قبل الجراحة (Pre Operative Check List)', 'ملف المريض فقط', 'تقرير شفهي فقط', 'نموذج خروج'], exp: 'يتم استخدام قائمة التدقيق قبل الجراحة (Pre Operative Check List).' }, en: { q: 'What is the handover tool used between ward and OR nurses?', opts: ['Pre Operative Check List', 'Patient file only', 'Verbal report only', 'Discharge form'], exp: 'Pre Operative Check List.' }, mix: { q: 'أداة التسليم للجناح/العمليات (Handover Tool)?', opts: ['Pre Operative Check List', 'File only', 'Verbal', 'Discharge form'], exp: 'Pre Operative Check List.' } }},
+            { category: '2_safe_surgery', correct: 3, content: { ar: { q: 'ما هو "Time Out" وماذا يتم تأكيده خلاله؟', opts: ['المرحلة الثانية لسلامة الجراحة، تبدأها الممرضة الدوّارة', 'التعريف بالفريق، هوية المريض، الموقع، الإجراء', 'المضاد الحيوي، الأحداث الحرجة، التصوير، المعدات', 'جميع ما سبق'], exp: 'هو المرحلة الثانية، بمشاركة كامل الفريق. يتم تأكيد: الأعضاء، المريض، الموقع، الإجراء، المضاد الحيوي، الأحداث المتوقعة، والمعدات/الصور.' }, en: { q: 'What is "Time Out" and what is confirmed?', opts: ['2nd phase of safety checklist, initiated by Circulating Nurse', 'Team intro, Patient ID, Site, Procedure', 'Antibiotics, Critical events, Imaging, Equipment', 'All of the above'], exp: 'Second phase involving entire team. Confirms: Team members, ID, Site, Procedure, Antibiotics (60 min), Critical events, Equipment, Imaging.' }, mix: { q: 'تفاصيل الـ Time Out؟', opts: ['2nd Phase by Circulating Nurse', 'Confirm ID, Site, Procedure', 'Antibiotics, Critical events', 'All of the above (جميع ما سبق)'], exp: 'تشمل كل ما سبق: تعريف الفريق، المريض، الموقع، المضاد، والمخاطر.' } }},
+            { category: '2_safe_surgery', correct: 3, content: { ar: { q: 'ما هو البروتوكول المستخدم لإجراء جراحة آمنة؟', opts: ['الحصول على الموافقة المستنيرة (Informed Consent)', 'تحديد الموقع (Site Marking)', 'القائمة المرجعية قبل الجراحة وقائمة السلامة الجراحية (Sign in/Time out/Sign out)', 'جميع ما سبق'], exp: 'يشمل البروتوكول: الموافقة المستنيرة، تحديد الموقع، القائمة المرجعية قبل الجراحة، وقائمة السلامة الجراحية (Sign in, Time out, Sign out).' }, en: { q: 'What is the protocol used for performing safe surgery?', opts: ['Get Informed Consent', 'Site Marking', 'Pre-Op Checklist & Surgical Safety Checklist', 'All of the above'], exp: 'Protocol includes: Informed Consent, Site Marking, Pre-Operative Checklist, and Surgical Safety Checklist (sign in-time out-sign out).' }, mix: { q: 'بروتوكول الجراحة الآمنة (Safe Surgery Protocol)؟', opts: ['Consent', 'Site Marking', 'Checklists (Pre-Op & Safety)', 'All of the above (جميع ما سبق)'], exp: 'يشمل: Consent, Site Marking, Pre-Op Checklist, Surgical Safety Checklist.' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'أين توجد قائمة الإجراءات الجراحية التي تتم خارج غرفة العمليات وتتطلب قائمة تفقد السلامة؟', opts: ['مرفقة مع سياسة "الجراحة الآمنة" وتشمل (العنايات، الطوارئ، الولادة، الأسنان، المناظير، الأشعة، العيون، العظام..)', 'في غرفة العمليات فقط', 'مع المدير الطبي', 'لا توجد قائمة محددة'], exp: 'القائمة مرفقة مع سياسة "Ensuring Correct Site, Correct Procedure and Correct Patient". تشمل: العنايات المركزة، الطوارئ، الولادة، وعيادات: الأسنان، المناظير، الأشعة التداخلية، العظام، العيون، الجلدية، المسالك، الأنف والأذن.' }, en: { q: 'Where is the list of invasive procedures done outside OR that requires Safety Checklist?', opts: ['Attached to Safe Surgery Policy (Includes ICU, ER, Delivery, Dental, Endoscopy, Radiology, etc.)', 'In OR only', 'With Medical Director', 'No specific list'], exp: 'Attached with policy "Ensuring Correct Site...". Areas: ICU, ER, Delivery/Observation, Clinics: Dental, Endoscopy, Radiology, Ortho, Ophtha, Derma, Urology, ENT.' }, mix: { q: 'قائمة الإجراءات الخارجية (Procedures outside OR) التي تتطلب Checklist؟', opts: ['Attached to Policy (ICU, ER, Clinics: Dental, Ortho, etc.)', 'OR only', 'Med Director', 'None'], exp: 'مرفقة بالسياسة. تشمل: العنايات (ICU)، الطوارئ (ER)، الولادة، وعيادات: الأسنان، المناظير، الأشعة، العظام، العيون، الجلدية، المسالك، ENT.' } }},
+            { category: '2_safe_surgery', correct: 2, content: { ar: { q: 'هل توجد خدمة التهدئة (Sedation) في المستشفى وهل يمكن إجراؤها في أي مكان؟', opts: ['نعم، في كل مكان', 'لا توجد خدمة', 'نعم، ولكن فقط في مناطق محددة (الأشعة المقطعية، العنايات، الطوارئ، المناظير، أجنحة الأطفال)', 'في العمليات فقط'], exp: 'نعم توجد الخدمة، ولكن فقط في مناطق محددة ومعتمدة: الأشعة المقطعية (CT)، العنايات الحرجة، الطوارئ (ER)، المناظير، وجناح الأطفال. يمنع في غيرها.' }, en: { q: 'Do we have sedation service, and can it be conducted anywhere?', opts: ['Yes, anywhere', 'No service available', 'Yes, but only in designated areas (CT, Critical areas, ER, Endoscopy, Peds Ward)', 'Only in OR'], exp: 'Yes, but only in designated areas: CT unit, Critical areas, ER, Endoscopy, and Pediatric Ward. No for other areas.' }, mix: { q: 'خدمة التهدئة (Sedation Service) وأماكنها؟', opts: ['Anywhere', 'No service', 'Designated areas only (CT, ICU, ER, Endoscopy, Peds)', 'OR only'], exp: 'Yes, only in designated areas (CT, Critical areas, ER, Endoscopy, Pediatric Ward).' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'ماذا يجب أن يتوفر في المناطق المصرح لها بإجراء التهدئة الإجرائية؟', opts: ['قوائم بالأطباء والتمريض المؤهلين والمصرح لهم (Privileged Staff List)', 'أجهزة تخدير كاملة فقط', 'موافقة المدير المناوب فقط', 'لا شيء محدد'], exp: 'يجب أن تتوفر قوائم بالأطباء وطاقم التمريض المؤهلين والمصرح لهم (Privileged/Competent) للمساعدة في التهدئة. القائمة متوفرة في مكتبة الجودة (CQI).' }, en: { q: 'What must be available in areas permitted to have Procedural Sedation?', opts: ['Lists of Privileged Physician and Nursing staff competent to assist', 'Anesthesia machines only', 'Duty Manager approval only', 'Nothing specific'], exp: 'Areas permitted should have lists of Privileged Physician and Nursing staff competent to assist in Procedural Sedation (list is available in CQI Library).' }, mix: { q: 'متطلبات مناطق التهدئة (Sedation Area Requirements)؟', opts: ['Lists of Privileged Staff (قوائم الموظفين المصرح لهم)', 'Machines only', 'Approval only', 'None'], exp: 'يجب توفر قوائم الموظفين المصرح لهم والمؤهلين (Lists of Privileged Physician & Nursing staff).' } }},
+            { category: '2_safe_surgery', correct: 3, content: { ar: { q: 'ما هي المؤهلات المطلوبة لمقدمي الرعاية الصحية للمشاركة في خدمات التهدئة المتوسطة؟', opts: ['دورات ACLS/PALS/NRP حسب الفئة العمرية', 'امتياز مبني على الكفاءة (Competency based privilege)', 'تعليم وتدريب مناسب على التهدئة المتوسطة', 'جميع ما سبق'], exp: 'تشمل المؤهلات: دورات الإنعاش المناسبة للعمر (ACLS/PALS/NRP)، الحصول على امتياز مبني على الكفاءة، وتلقي التدريب والتعليم المناسب.' }, en: { q: 'What are the required qualifications for providers participating in moderate sedation?', opts: ['ACLS/PALS/NRP as appropriate', 'Competency based privilege', 'Proper education/training on sedation', 'All of the above'], exp: 'Required qualifications: ACLS/PALS/NRP appropriate to age group, Competency based privilege, and Proper education/training on moderate sedation.' }, mix: { q: 'مؤهلات التهدئة المتوسطة (Moderate Sedation Qualifications)؟', opts: ['ACLS/PALS/NRP', 'Privilege (امتياز)', 'Education/Training (تدريب)', 'All of the above (جميع ما سبق)'], exp: 'تشمل: دورات الإنعاش (ACLS/PALS)، الامتياز (Privilege)، والتدريب (Training).' } }},
+            { category: '2_safe_surgery', correct: 1, content: { ar: { q: 'من المسؤول عن وضع علامة مكان العملية (Site Marking)؟', opts: ['الممرضة', 'الجراح الاستشاري المسؤول', 'طبيب التخدير', 'المريض'], exp: 'يجب أن يقوم الجراح الاستشاري المسؤول بوضع العلامة. لا يسمح للممرض بذلك.' }, en: { q: 'Who is responsible for Site Marking?', opts: ['Nurse', 'Consultant Surgeon', 'Anesthesiologist', 'Patient'], exp: 'Marking must be undertaken by the CONSULTANT SURGEON. NO NURSE is allowed to do it.' }, mix: { q: 'من المسؤول عن Site Marking؟', opts: ['Nurse', 'الجراح الاستشاري (Consultant Surgeon)', 'Anesthesia', 'Patient'], exp: 'الجراح الاستشاري (Consultant Surgeon) هو المسؤول.' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'متى يجب وضع علامة مكان العملية؟', opts: ['للإجراءات التي تشمل الجانبية (يمين/يسار) أو الهياكل المتعددة', 'لجميع المرضى', 'عند الطلب', 'بعد التخدير'], exp: 'في الإجراءات التي تشمل عضو في أحد الجانبين، هياكل متعددة (أصابع)، أو مستويات متعددة (عمود فقري).' }, en: { q: 'When must site marking be done?', opts: ['For Laterality, Multiple structures/levels', 'All patients', 'On request', 'After anesthesia'], exp: 'For all procedures involving: Laterality (Left/right), Multiple structures (fingers), Multiple levels (spinal).' }, mix: { q: 'متى يتم الـ Site Marking؟', opts: ['Laterality/Multiple levels', 'All patients', 'Request', 'Post-Anesthesia'], exp: 'للجانبية (Laterality) أو المستويات المتعددة (Multiple levels).' } }},
+            { category: '2_safe_surgery', correct: 2, content: { ar: { q: 'ما شكل علامة مكان العملية؟', opts: ['دائرة', 'إشارة X', 'سهم', 'توقيع'], exp: 'يتم رسم علامة سهم بوضوح عند أو قرب مكان العملية.' }, en: { q: 'What is the shape of site marking?', opts: ['Circle', 'X mark', 'Arrow', 'Signature'], exp: 'Arrow sign drawn clearly at or near the Surgical procedure site.' }, mix: { q: 'شكل العلامة (Site Marking Shape)؟', opts: ['Circle', 'X', 'سهم (Arrow)', 'Signature'], exp: 'سهم (Arrow) مرسوم بوضوح.' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'متى تتم مرحلة "Time Out"؟', opts: ['قبل شق الجلد مباشرة', 'قبل التخدير', 'بعد العملية', 'في الجناح'], exp: 'يتم عمل Time Out في المكان الذي ستجرى فيه الجراحة قبل شق الجلد.' }, en: { q: 'When is "Time Out" performed?', opts: ['Before skin incision', 'Before anesthesia', 'After surgery', 'In ward'], exp: 'Done in the location where the surgery will be performed before skin incision.' }, mix: { q: 'وقت الـ Time Out؟', opts: ['Before Skin Incision', 'Before anesthesia', 'After surgery', 'Ward'], exp: 'قبل شق الجلد (Before skin incision).' } }},
+            { category: '2_safe_surgery', correct: 1, content: { ar: { q: 'من يقوم بمرحلة "Sign In"؟', opts: ['الجراح فقط', 'الممرض وطبيب التخدير (على الأقل)', 'فني الأشعة', 'الاستقبال'], exp: 'تتم من قبل الممرض + طبيب التخدير (على الأقل) قبل التخدير.' }, en: { q: 'Who performs "Sign In"?', opts: ['Surgeon only', 'Nurse and Anesthesiologist (at least)', 'Technician', 'Reception'], exp: 'It should be done by at least a nurse and anesthesiologist, before induction of anesthesia.' }, mix: { q: 'من يقوم بـ Sign In؟', opts: ['Surgeon', 'Nurse & Anesthesiologist', 'Technician', 'Reception'], exp: 'الممرض (Nurse) وطبيب التخدير (Anesthesiologist).' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'من يقوم بمرحلة "Sign Out" ومتى؟', opts: ['الممرض، طبيب التخدير، والجراح (قبل مغادرة المريض غرفة العمليات)', 'الجراح فقط (بعد الخروج)', 'التمريض فقط (في الجناح)', 'طبيب التخدير (في الإفاقة)'], exp: 'تتم بواسطة الممرض، طبيب التخدير، والجراح قبل مغادرة الغرفة. تتأكد الممرضة من: اسم الإجراء، عد الآلات والإبر، العينات، مشاكل المعدات، ومخاوف التعافي.' }, en: { q: 'Who performs "Sign Out" and when?', opts: ['Nurse, Anesthesiologist, Surgeon (Before patient leaves OR)', 'Surgeon only (After discharge)', 'Nurse only (In Ward)', 'Anesthesiologist (In Recovery)'], exp: 'Done by Nurse, Anesthesiologist, & Surgeon before leaving OR. Nurse confirms: Procedure name, counts (instruments/sponges/needles), specimen labeling, equipment issues, and recovery concerns.' }, mix: { q: 'من يقوم بـ Sign Out ومتى (Who & When)؟', opts: ['Nurse, Anesthesiologist, Surgeon (Before leaving OR)', 'Surgeon only', 'Nurse only', 'Anesthesiologist only'], exp: 'Done by team before leaving OR. Confirms: Procedure, counts, specimen, & recovery concerns.' } }},
+            { category: '2_safe_surgery', correct: 2, content: { ar: { q: 'متى تتم مرحلة "Sign Out"؟', opts: ['قبل التخدير', 'أثناء العملية', 'قبل مغادرة المريض غرفة العمليات', 'في الإفاقة'], exp: 'قبل نقل المريض من غرفة العمليات.' }, en: { q: 'When is "Sign Out" performed?', opts: ['Before anesthesia', 'During surgery', 'Before patient leaves OR', 'In recovery'], exp: 'Before patient leaves Operating Room.' }, mix: { q: 'وقت الـ Sign Out؟', opts: ['Induction', 'During Op', 'Before leaving OR', 'Recovery'], exp: 'قبل مغادرة المريض غرفة العمليات (Before leaving OR).' } }},
+            { category: '2_safe_surgery', correct: 0, content: { ar: { q: 'من المخول بإعطاء التخدير للأطفال في العمليات؟', opts: ['استشاريو التخدير الحاصلين على PALS', 'أي طبيب تخدير', 'ممرضة العمليات', 'الجراح'], exp: 'استشاريي التخدير فقط الحاصلين على شهادات PALS.' }, en: { q: 'Who is privileged to give anesthesia to pediatric patients?', opts: ['Anesthesia consultants with PALS', 'Any anesthetist', 'OR Nurse', 'Surgeon'], exp: 'Only Anesthesia consultants with PALS certificates.' }, mix: { q: 'تخدير الأطفال (Pediatric Anesthesia)؟', opts: ['Consultants + PALS', 'Any MD', 'Nurse', 'Surgeon'], exp: 'استشاريو التخدير مع شهادة PALS.' } }},
+
+            // --- 3. Credentialing (5 Questions) ---
+            { category: '3_credentialing', correct: 0, content: { ar: { q: 'من المسؤول عن تقييم أوراق التعيين (Credentials)؟', opts: ['لجنة مسوغات التعيين والامتيازات', 'المدير الطبي وحده', 'شؤون الموظفين', 'رئيس القسم'], exp: 'لجنة مسوغات التعيين والامتيازات برئاسة المدير الطبي.' }, en: { q: 'Who evaluates clinical credentials?', opts: ['Credentials and privileging committee', 'Medical Director only', 'Personnel', 'HOD'], exp: 'Credentials and privileging committee chaired by medical director.' }, mix: { q: 'مسؤول تقييم الشهادات (Credentials)؟', opts: ['C&P Committee', 'Med Director', 'HR', 'HOD'], exp: 'لجنة التعيين والامتيازات (Credentials and privileging committee).' } }},
+            { category: '3_credentialing', correct: 0, content: { ar: { q: 'كيف يتم التحقق من شهادة التصنيف الصحي (SCFHS)؟', opts: ['من خلال صفحة التحقق في موقع هيئة التخصصات الصحية', 'عبر الاتصال الهاتفي', 'زيارة الفرع', 'لا يلزم'], exp: 'من خلال صفحة التحقق من صلاحية تسجيل الممارس الصحي في موقع هيئة التخصصات الصحية.' }, en: { q: 'How is SCFHS verification done?', opts: ['Through SCFHS verification webpage', 'By calling', 'Visiting branch', 'Not needed'], exp: 'Through verification web page of SCFHS of validity of healthcare registration.' }, mix: { q: 'التحقق من هيئة التخصصات (SCFHS Verification)؟', opts: ['SCFHS Webpage', 'Call', 'Visit', 'None'], exp: 'عبر صفحة التحقق في موقع الهيئة (SCFHS verification webpage).' } }},
+            { category: '3_credentialing', correct: 3, content: { ar: { q: 'ما هي الوثائق المعتمدة في ملف الموظف (Credentials)؟', opts: ['الوصف الوظيفي والترخيص', 'التعليم والتدريب والخبرة', 'شهادات دعم الحياة والامتيازات والتقييمات', 'جميع ما سبق'], exp: 'تشمل: الوصف الوظيفي، الترخيص، التعليم، التدريب، الخبرة، شهادات الحياة (BLS/ACLS)، الامتيازات، تقييم الأداء، ونموذج تقييم المسوغات.' }, en: { q: 'What credentials are found in your personnel file?', opts: ['Job Description & License', 'Education, Training, Experience', 'Life Support Certs, Privileges, Evaluations', 'All of the above'], exp: 'Includes: Job description, License, Education, Training, Experience, BLS/ACLS/..., Privileges, Competency, Performance evaluation, Credentials evaluation form.' }, mix: { q: 'محتويات ملف الموظف (Credentials in Personnel File)؟', opts: ['JD & License', 'Education/Training', 'Privileges/Evals', 'All of the above (جميع ما سبق)'], exp: 'تشمل كل الوثائق: JD, License, Education, Training, BLS, Privileges, Evaluations.' } }},
+            { category: '3_credentialing', correct: 1, content: { ar: { q: 'كيف يتم التحقق من شهادات السعوديين؟', opts: ['Dataflow فقط', 'Dataflow + معادلة وزارة التعليم', 'اتصال هاتفي', 'لا يلزم'], exp: 'للسعوديين: تقرير Dataflow + تقرير معادلة وزارة التعليم العالي.' }, en: { q: 'Verification for Saudi certificates?', opts: ['Dataflow only', 'Dataflow + Ministry Equalization', 'Phone call', 'None'], exp: 'For Saudis: Dataflow Report + High education ministry equalization report.' }, mix: { q: 'التحقق للسعوديين (Saudi Verification)؟', opts: ['Dataflow', 'Dataflow + Equalization', 'Phone', 'None'], exp: 'Dataflow + معادلة الوزارة (Equalization).' } }},
+            { category: '3_credentialing', correct: 0, content: { ar: { q: 'كيف يتم التحقق من شهادات غير السعوديين؟', opts: ['تقرير Dataflow', 'اتصال بالجامعة', 'تصديق السفارة', 'ختم الصورة'], exp: 'لغير السعوديين: تقرير الداتا فلو (Dataflow Report).' }, en: { q: 'Verification for non-Saudi certificates?', opts: ['Dataflow Report', 'Call University', 'Embassy', 'Stamp'], exp: 'For non-Saudis: Dataflow Report.' }, mix: { q: 'التحقق لغير السعوديين (Non-Saudi Verification)؟', opts: ['Dataflow', 'Call', 'Embassy', 'Stamp'], exp: 'Dataflow Report.' } }},
+
+            // --- 4. Privileging (5 Questions) ---
+            { category: '4_privileging', correct: 0, content: { ar: { q: 'كيف يعرف الموظف أدواره ومسؤولياته؟', opts: ['من خلال الوصف الوظيفي الموقع (Job Description)', 'من خلال سؤال الزملاء', 'من خلال الانترنت', 'لا يوجد وصف محدد'], exp: 'من خلال الوصف الوظيفي الموقع الذي يشرحه رئيس القسم المباشر. يجب توقيعه من الموظف والرئيس والموارد البشرية.' }, en: { q: 'How does an employee define his roles and responsibilities?', opts: ['Through signed Job Description', 'Asking colleagues', 'Internet search', 'No specific description'], exp: 'Through his signed Job Description explained by the dept head. Signed by Employee + Dept Head + HRD.' }, mix: { q: 'كيف يعرف الموظف مسؤولياته (Roles & Responsibilities)؟', opts: ['Signed Job Description (الوصف الوظيفي)', 'Colleagues', 'Internet', 'None'], exp: 'من خلال الوصف الوظيفي الموقع (Signed Job Description) المشروح من رئيس القسم.' } }},
+            { category: '4_privileging', correct: 2, content: { ar: { q: 'كيف يجد الأطباء امتيازاتهم وكيف يصلون إليها؟', opts: ['نسخة في العيادة فقط', 'على الموقع الإلكتروني فقط', 'نسخة للطبيب والإدارة الطبية، والأصل في ملف الموظف (HRD)', 'لا يتم توزيع نسخ'], exp: 'بعد الموافقة، تعطى نسخة للطبيب والإدارة الطبية، ويحفظ الأصل في ملف الموظف بالموارد البشرية (HRD).' }, en: { q: 'How can Physicians find/access their privileges?', opts: ['Copy in clinic only', 'Website only', 'Copy to Physician & Med Admin, Original in HRD File', 'No copies distributed'], exp: 'Copy given to Physician and Medical Administration; Original attached to Personnel File in HRD.' }, mix: { q: 'أين يجد الطبيب امتيازاته (Privileges Access)؟', opts: ['Clinic only', 'Website', 'Copy to Dr/Med Admin, Original in HRD', 'None'], exp: 'نسخة للطبيب والإدارة الطبية، والأصل في الموارد البشرية (HRD).' } }},
+            { category: '4_privileging', correct: 1, content: { ar: { q: 'من هو رئيس لجنة الامتيازات؟', opts: ['مدير المستشفى', 'المدير الطبي', 'رئيس التمريض', 'مدير الموارد البشرية'], exp: 'المدير الطبي (Medical Director).' }, en: { q: 'Who is the chairman of credentialing/privileging committee?', opts: ['Hospital Director', 'Medical Director', 'Nursing Director', 'HR Director'], exp: 'Medical Director.' }, mix: { q: 'رئيس لجنة الامتيازات (Chairman)؟', opts: ['Hospital Director', 'Medical Director', 'Nursing Director', 'HR'], exp: 'المدير الطبي (Medical Director).' } }},
+            { category: '4_privileging', correct: 0, content: { ar: { q: 'أين يحفظ أصل نموذج الامتيازات الطبية؟', opts: ['في ملف الموظف بالموارد البشرية', 'مع الطبيب', 'في القسم', 'في الإدارة الطبية'], exp: 'الأصل يحفظ في ملف الموظف بإدارة الموارد البشرية (HRD).' }, en: { q: 'Where is the original privileges form kept?', opts: ['Personnel File in HRD', 'With Physician', 'In Unit', 'Medical Admin'], exp: 'Original form is attached to the Personnel File in HRD.' }, mix: { q: 'مكان حفظ أصل الامتيازات (Original Privileges)؟', opts: ['HR File', 'Physician', 'Unit', 'Admin'], exp: 'ملف الموظف بالموارد البشرية (Personnel File in HRD).' } }},
+            { category: '4_privileging', correct: 2, content: { ar: { q: 'كيف تعرف الممرضة امتيازات الطبيب في القسم؟', opts: ['تسأل الطبيب', 'تتصل بالمدير', 'من ملف الامتيازات لدى رئيسة الممرضات', 'لا يهم'], exp: 'يجب أن يعطي الطبيب نسخة لرئيسة الممرضات لتحفظها في ملف الامتيازات بالوحدة.' }, en: { q: 'How to identify physician privileges in the unit?', opts: ['Ask doctor', 'Call Director', 'Head Nurse Privilege File', 'Not important'], exp: 'Head Nurse keeps a copy in a Privilege File accessible to all staff.' }, mix: { q: 'معرفة الامتيازات بالقسم (Unit Privileges)؟', opts: ['Ask', 'Call', 'Head Nurse File', 'Ignore'], exp: 'ملف الامتيازات لدى رئيسة الممرضات (Head Nurse Privilege File).' } }},
+
+            // --- 5. Safe Blood (10 Questions) ---
+            { category: '5_blood', correct: 0, content: { ar: { q: 'ماهي أقل المحتويات في أوامر الطبيب بما يتعلق بنقل الدم؟', opts: ['فصيلة الدم، عدد الوحدات، ومدة النقل', 'اسم المريض فقط', 'اسم الطبيب فقط', 'التشخيص فقط'], exp: 'تشمل: فصيلة الدم (Type of blood)، عدد الوحدات (Number of Units)، ومدة النقل (Duration of Transfusion).' }, en: { q: 'What are the minimal contents in the Doctor’s Order regarding blood transfusion?', opts: ['Type of blood, Number of Units, Duration', 'Patient Name only', 'Doctor Name only', 'Diagnosis only'], exp: 'Contents: Type of the blood, Number of Units, Duration of Transfusion.' }, mix: { q: 'محتويات أمر نقل الدم (Blood Order Contents)؟', opts: ['Type, Units, Duration', 'Patient Name', 'Doctor Name', 'Diagnosis'], exp: 'النوع (Type)، العدد (Units)، والمدة (Duration).' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'ماهي الاعراض الناتجة عن تفاعلات نقل الدم الحادة؟', opts: ['حمى، رعشة، حكة، ضيق تنفس، بول أحمر، فقدان وعي', 'صداع فقط', 'جوع وعطش', 'نعاس شديد'], exp: 'تشمل: ارتفاع الحرارة (Fever)، رعشة (Chills)، حكة (Pruritus)، ضيق تنفس (SOB)، بول أحمر (Hemoglobinuria)، فقدان الوعي.' }, en: { q: 'What are the acute blood transfusion reaction symptoms?', opts: ['Fever, Chills, Pruritus, SOB, Red Urine, Unconsciousness', 'Headache only', 'Hunger/Thirst', 'Drowsiness'], exp: 'Includes: Fever, Chills, Pruritus, Shortness of breath, Red colored urine (hemoglobinuria), Loss of consciousness.' }, mix: { q: 'أعراض تفاعل الدم الحادة (Acute Reaction Symptoms)؟', opts: ['Fever, Chills, SOB, Red Urine (حمى/رعشة/ضيق تنفس)', 'Headache', 'Hunger', 'Sleepiness'], exp: 'حمى، رعشة، حكة، ضيق تنفس، بول أحمر، فقدان الوعي.' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'ماهي الآثار الجانبية لنقل الدم؟', opts: ['الارتشاح، تسرب الدم داخل الجسم، انسداد الهواء', 'سعادة', 'نوم عميق', 'جوع'], exp: 'الآثار الجانبية تشمل: الارتشاح (Infiltration)، تسرب الدم (Extravasation)، وانسداد الهواء (Air embolism).' }, en: { q: 'What are blood transfusion side effects?', opts: ['Infiltration, Extravasation, Air embolism', 'Happiness', 'Deep sleep', 'Hunger'], exp: 'Side effects: Infiltration, Extravasation, air embolism.' }, mix: { q: 'الآثار الجانبية لنقل الدم (Side Effects)؟', opts: ['Infiltration, Extravasation, Air embolism', 'Happiness', 'Sleep', 'Hunger'], exp: 'الارتشاح (Infiltration)، التسرب (Extravasation)، انسداد الهواء (Air embolism).' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'كيف ستتصرف مع تفاعلات نقل الدم / الآثار الجانبية؟', opts: ['اتباع نموذج إرشادات تفاعلات نقل الدم المرفق مع كل كيس', 'الاتصال بالأمن', 'تجاهل الأمر', 'إيقاف ورمي الكيس فوراً دون توثيق'], exp: 'الإجراءات المتخذة مستندة على نموذج ارشادات تفاعلات نقل الدم (TRANSFUSION REACTION INSTRUCTIONS FORM) المرفق مع كل حقيبة.' }, en: { q: 'How will you deal with transfusion reaction/side effects?', opts: ['Follow Transfusion Reaction Instructions Form attached to pack', 'Call security', 'Ignore', 'Discard immediately without record'], exp: 'Actions based on the TRANSFUSION REACTION INSTRUCTIONS FORM attached in every blood transfusion Pack.' }, mix: { q: 'التعامل مع التفاعل (Dealing with Reaction)؟', opts: ['Follow attached Instruction Form (اتباع النموذج المرفق)', 'Call Security', 'Ignore', 'Discard'], exp: 'اتباع نموذج الإرشادات المرفق (Attached Instruction Form).' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'كيف تتصرف في حال الاحتياج لنقل دم للحالات الطارئة (تجاوز التطابق)؟', opts: ['تعبئة نموذج صرف الدم الطارئ من الطبيب وتوقيع أخصائي بنك الدم', 'أمر شفهي فقط', 'أخذ أي كيس دم متاح', 'الانتظار حتى انتهاء التطابق الكامل'], exp: 'يوجد إجراء ونموذج خاص (Emergency Release) يعبأ من الطبيب ويصرف الدم مباشرة بعد توقيع أخصائي بنك الدم.' }, en: { q: 'How to deal with emergency need for blood transfusion skipping crossmatching?', opts: ['Emergency release form filled by physician & signed by BB specialist', 'Verbal order only', 'Take any available blood', 'Wait for full crossmatch'], exp: 'Procedures and form for emergency release filled by physician; issuing done immediately after signature of blood bank specialist.' }, mix: { q: 'نقل الدم الطارئ (Emergency Transfusion - Skip Crossmatch)؟', opts: ['Emergency Form + BB Specialist Signature', 'Verbal order', 'Any blood', 'Wait'], exp: 'نموذج الطوارئ وتوقيع الأخصائي (Emergency Form + Specialist Sig).' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'من المسؤول عن أخذ الموافقة (Consent) لنقل الدم؟', opts: ['الطبيب المعالج', 'الممرضة', 'فني المختبر', 'موظف الدخول'], exp: 'الطبيب المعالج هو المسؤول ويجب شرح المخاطر والفوائد والبدائل.' }, en: { q: 'Who takes consent for blood transfusion?', opts: ['Attending Physician', 'Nurse', 'Lab Tech', 'Admission'], exp: 'Attending physician and must explain risks, benefits, and alternatives.' }, mix: { q: 'المسؤول عن إقرار الدم (Blood Consent)؟', opts: ['Physician', 'Nurse', 'Lab', 'Admission'], exp: 'الطبيب المعالج (Attending Physician).' } }},
+            { category: '5_blood', correct: 2, content: { ar: { q: 'متى يجب أخذ الموافقة لنقل الدم؟', opts: ['مرة واحدة عند التنويم', 'مرة في السنة', 'قبل كل عملية نقل دم', 'عند الخروج'], exp: 'قبل كل عملية نقل دم (Before each set of transfusion).' }, en: { q: 'When to get blood transfusion consent?', opts: ['Once at admission', 'Yearly', 'Before each set of transfusion', 'At discharge'], exp: 'Before each set of transfusion regardless type of blood product.' }, mix: { q: 'وقت إقرار الدم (Consent Timing)؟', opts: ['Admission', 'Yearly', 'Before each set', 'Discharge'], exp: 'قبل كل عملية نقل (Before each set of transfusion).' } }},
+            { category: '5_blood', correct: 1, content: { ar: { q: 'متى يتم التحقق من هوية المريض في عملية نقل الدم؟', opts: ['عند التنويم', 'قبل سحب العينة وقبل إعطاء الدم', 'بعد النقل', 'عند الطلب'], exp: 'قبل سحب الدم للمطابقة، وقبل القيام بالإجراء (إعطاء الدم).' }, en: { q: 'When to verify patient identity for blood transfusion?', opts: ['Admission', 'Before extraction & Before administration', 'After transfusion', 'On request'], exp: 'Before blood extraction for cross matching AND Before administration of blood.' }, mix: { q: 'التحقق من الهوية (Identity Verification)؟', opts: ['Admission', 'Before extraction & admin', 'After', 'Request'], exp: 'قبل السحب وقبل الإعطاء (Before extraction & administration).' } }},
+            { category: '5_blood', correct: 0, content: { ar: { q: 'كم مرة تتم مراقبة العلامات الحيوية في أول 30 دقيقة؟', opts: ['كل 15 دقيقة (مرتين)', 'مرة واحدة', 'كل 5 دقائق', 'لا يلزم'], exp: 'كل 15 دقيقة مرتين خلال النصف ساعة الأولى.' }, en: { q: 'Vital signs monitoring in first 30 mins?', opts: ['Every 15 mins (Twice)', 'Once', 'Every 5 mins', 'Not needed'], exp: 'Re-check vital signs every fifteen (15) minutes twice for the first half hour.' }, mix: { q: 'العلامات الحيوية أول 30 دقيقة (VS monitoring)؟', opts: ['Every 15 mins (Twice)', 'Once', '5 mins', 'None'], exp: 'كل 15 دقيقة مرتين (Every 15 mins twice).' } }},
+            { category: '5_blood', correct: 2, content: { ar: { q: 'ماذا تفعل عند حدوث تفاعل نقل دم (Reaction)؟', opts: ['إبطاء النقل', 'إعطاء خافض حرارة', 'إيقاف النقل فوراً وفتح الوريد بمحلول ملحي', 'تجاهل الأمر'], exp: 'إيقاف نقل الدم فوراً، فتح الوريد بمحلول ملحي 0.9%، إبلاغ الطبيب.' }, en: { q: 'Action for transfusion reaction?', opts: ['Slow down', 'Give antipyretic', 'Stop immediately & Flush with Saline', 'Ignore'], exp: 'Stop immediately, Flush IV with 0.9% Saline, Inform physician.' }, mix: { q: 'عند تفاعل الدم (Reaction)؟', opts: ['Slow down', 'Meds', 'Stop & Flush Saline', 'Ignore'], exp: 'إيقاف النقل فوراً وفتح الوريد بمحلول ملحي (Stop & Flush).' } }},
+
+            // --- 6. VTE (4 Questions) ---
+            { category: '6_vte', correct: 0, content: { ar: { q: 'من يتم تقييمهم لمخاطر الجلطات (VTE)؟', opts: ['جميع المرضى البالغين (+18) عند التنويم', 'كبار السن فقط', 'مرضى الجراحة فقط', 'العناية المركزة'], exp: 'يتم التقييم لكل المرضى البالغين (+18) عند التنويم.' }, en: { q: 'Who is assessed for VTE risk?', opts: ['All admitted adults (+18)', 'Elderly only', 'Surgery only', 'ICU only'], exp: 'All adult (+18) patients upon admission to the hospital.' }, mix: { q: 'من يقيم لـ VTE؟', opts: ['All adults (+18)', 'Elderly', 'Surgery', 'ICU'], exp: 'جميع البالغين المنومين (All admitted adults).' } }},
+            { category: '6_vte', correct: 1, content: { ar: { q: 'متى يتم تقييم VTE؟', opts: ['عند الخروج', 'عند التنويم، بعد الجراحة، وعند تغير الحالة', 'مرة واحدة', 'عند الطلب'], exp: 'عند دخول المريض، بعد العمليات الجراحية، وعند تغير حالة المريض.' }, en: { q: 'When is VTE assessment done?', opts: ['Discharge', 'Admission, Post-op, Change in condition', 'Once', 'On request'], exp: 'Upon admission, Reassessment postoperatively and upon Change in patient condition.' }, mix: { q: 'توقيت تقييم VTE؟', opts: ['Discharge', 'Admission/Post-op/Change', 'Once', 'Request'], exp: 'عند التنويم، بعد الجراحة، وتغير الحالة.' } }},
+            { category: '6_vte', correct: 2, content: { ar: { q: 'ما هو النموذج المستخدم لتقييم VTE؟', opts: ['Braden', 'Morse', 'Caprini', 'GCS'], exp: 'يستخدم نموذج كابريني (CAPRINI Form).' }, en: { q: 'Which form is used for VTE assessment?', opts: ['Braden', 'Morse', 'Caprini', 'GCS'], exp: 'CAPRINI Form.' }, mix: { q: 'نموذج VTE؟', opts: ['Braden', 'Morse', 'Caprini', 'GCS'], exp: 'Caprini Form.' } }},
+            { category: '6_vte', correct: 2, content: { ar: { q: 'ماهي أنواع الوقاية من الجلطات الوريدية (VTE)؟', opts: ['دوائية فقط', 'ميكانيكية فقط', 'دوائية وميكانيكية (Chemical & Mechanical)', 'لا يوجد'], exp: 'حسب الأدلة الإرشادية المعتمدة: دوائية (Chemical/Medication) وميكانيكية (Mechanical).' }, en: { q: 'What are the types of Prophylaxis for VTE?', opts: ['Chemical only', 'Mechanical only', 'Chemical & Mechanical', 'None'], exp: 'According to adopted guidelines: Chemical / Medication and Mechanical.' }, mix: { q: 'أنواع الوقاية من VTE (Prophylaxis Types)؟', opts: ['Chemical', 'Mechanical', 'Chemical & Mechanical', 'None'], exp: 'تشمل: دوائية (Chemical) وميكانيكية (Mechanical).' } }},
+
+            // --- 7. High Alert Meds (13 Questions) ---
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'اذكر أمثلة على الأدوية عالية الخطورة؟', opts: ['الأنسولين، الهيبارين، كلوريد البوتاسيوم، كبريتات المغنيسيوم، المخدرات', 'البنادول، الفيتامينات', 'المضادات الحيوية العادية', 'قطرات العين المرطبة'], exp: 'تشمل: Insulin, Heparin, Potassium Chloride, Magnesium Sulphate, Narcotic & Controlled drugs.' }, en: { q: 'Give examples of High Alert Medications?', opts: ['Insulin, Heparin, Potassium Chloride, Magnesium Sulphate, Narcotics', 'Panadol, Vitamins', 'Normal Antibiotics', 'Eye drops'], exp: 'Examples: Insulin, Heparin, Potassium Chloride, Magnesium Sulphate, narcotic and controlled drugs.' }, mix: { q: 'أمثلة High Alert Medications؟', opts: ['Insulin, Heparin, KCL, MgSO4, Narcotics', 'Panadol', 'Antibiotics', 'Eye drops'], exp: 'Insulin, Heparin, Potassium Chloride, Magnesium Sulphate, Narcotics.' } }},
+            { category: '7_high_alert', correct: 3, content: { ar: { q: 'أين يمكن العثور على الأدوية عالية الخطورة في المستشفى؟', opts: ['المستودع فقط', 'الصيدلية فقط', 'الأقسام السريرية فقط', 'المستودع، الصيدلية، وجميع المناطق السريرية (Clinical Areas)'], exp: 'توجد في: المستودع (Warehouse)، الصيدلية (Pharmacy)، وجميع المناطق السريرية (All Clinical Areas).' }, en: { q: 'Where can you find high alert medications in the Hospital?', opts: ['Warehouse only', 'Pharmacy only', 'Clinical Areas only', 'Warehouse, Pharmacy, All Clinical Areas'], exp: 'Warehouse, Pharmacy, All Clinical Areas.' }, mix: { q: 'أماكن تواجد High Alert Meds؟', opts: ['Warehouse', 'Pharmacy', 'Clinical Areas', 'All (الجميع)'], exp: 'في المستودع والصيدلية وجميع الأقسام السريرية.' } }},
+            { category: '7_high_alert', correct: 3, content: { ar: { q: 'ما هي الاحتياطات (5 استراتيجيات) للتعامل مع الأدوية عالية الخطورة؟', opts: ['تحسين الوصول للمعلومات، تقليل الوصول للدواء', 'استخدام التنبيهات والملصقات، توحيد الإجراءات', 'تطبيق التحقق الثنائي المستقل (Independent Double Check)', 'جميع ما سبق'], exp: 'تشمل 5 استراتيجيات: تحسين المعلومات، تقييد الوصول، التنبيهات/الملصقات، توحيد العمليات، والتحقق الثنائي المستقل.' }, en: { q: 'What precautions (5 strategies) should be followed for High-Alert Medications?', opts: ['Improve info access, Limit access', 'Computerized alerts/labels, Standardize procedures', 'Independent Double Check', 'All of the above'], exp: 'Strategies: Improve info access, Limit access, Alerts/Labels, Standardize ordering/monitoring, Independent Double Check.' }, mix: { q: 'استراتيجيات التعامل مع High Alert (5 Strategies)؟', opts: ['Limit Access', 'Double Check', 'Standardize', 'All of the above (جميع ما سبق)'], exp: 'تشمل: Limit access, Double Check, Alerts, Standardization, Info access.' } }},
+            { category: '7_high_alert', correct: 1, content: { ar: { q: 'هل توجد قائمة محدثة للأدوية عالية الخطورة ومتى آخر تحديث؟', opts: ['لا توجد', 'نعم، في مكتبة الجودة (CQI) وغرف الأدوية. آخر تحديث فبراير 2025', 'نعم، تحديث 2020', 'فقط في الصيدلية'], exp: 'نعم، القائمة متاحة في CQI وغرف الأدوية. آخر تحديث فبراير 2025، تمت إضافة (lixisenatide/insulin glargine).' }, en: { q: 'Is there an updated High Alert Medication List & when was it last updated?', opts: ['No list', 'Yes, in CQI/Med Rooms. Updated Feb 2025', 'Yes, Updated 2020', 'Pharmacy only'], exp: 'Yes, accessible in CQI Library & Med Rooms. Last update: February 2025 (Added: combination lixisenatide/insulin glargine).' }, mix: { q: 'تحديث قائمة High Alert List؟', opts: ['No list', 'Feb 2025 (CQI/Med Room)', '2020', 'Pharmacy'], exp: 'محدثة في فبراير 2025 وموجودة في CQI وغرف الأدوية.' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'كيف يتم التعامل مع المحاليل المركزة (Concentrated Electrolytes)؟', opts: ['تخزين بالصيدلية فقط، تخفيف إجباري، ملصقات حمراء وزرقاء، وصول مقيد', 'تخزين في القسم للسهولة', 'إعطاء مباشر', 'لا قيود'], exp: 'قيود صارمة: تخزين بالصيدلية فقط (إلا باستثناءات)، تخزين منفصل، ملصقات حمراء وزرقاء، تخفيف إجباري، وصول للمؤهلين فقط.' }, en: { q: 'How are Concentrated Electrolytes managed?', opts: ['Pharmacy storage only, Mandatory dilution, Red/Blue stickers, Restricted access', 'Ward storage', 'Direct administration', 'No restrictions'], exp: 'Restricted access/storage (Pharmacy), Separate storage, Red & Blue stickers, Mandatory dilution, Standard preparation.' }, mix: { q: 'المحاليل المركزة (Concentrated Electrolytes)؟', opts: ['Pharmacy only + Dilution + Red/Blue stickers', 'Ward', 'Direct', 'None'], exp: 'تخزين بالصيدلية، تخفيف إجباري، ملصقات حمراء وزرقاء.' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'ما هي الأدوية الخطرة (Hazardous Medications)؟', opts: ['أدوية قد تسبب ضرراً بالتعرض (سرطان، تشوهات، سمية جينية/عضوية)', 'أدوية منتهية الصلاحية', 'مضادات حيوية قوية', 'مسكنات'], exp: 'أي دواء يسبب ضرراً بالتعرض له (سرطان، تشوهات جنينية، سمية تكاثرية، سمية أعضاء بجرعات قليلة، سمية جينية).' }, en: { q: 'What are Hazardous Medications?', opts: ['Drugs causing harm upon exposure (Carcinogenicity, Teratogenicity, Toxicity)', 'Expired drugs', 'Strong antibiotics', 'Painkillers'], exp: 'Potential to cause harm upon exposure: Carcinogenicity, teratogenicity, reproductive toxicity, organ toxicity, genotoxicity.' }, mix: { q: 'الأدوية الخطرة (Hazardous Medications)؟', opts: ['Harm upon exposure (Carcinogenic/Toxic)', 'Expired', 'Antibiotics', 'Painkillers'], exp: 'تسبب ضرر عند التعرض (سرطان، سمية، تشوهات).' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'أمثلة على الأدوية الخطرة؟', opts: ['هيدروكسي يوريا، فينيتوين، فلوكونازول', 'باراسيتامول', 'فيتامين سي', 'محلول ملحي'], exp: 'أمثلة: Hydroxyurea, Phenytoin, Fluconazole.' }, en: { q: 'Examples of Hazardous Medications?', opts: ['Hydroxyurea, Phenytoin, Fluconazole', 'Paracetamol', 'Vitamin C', 'Normal Saline'], exp: 'Hydroxyurea, phenytoin, fluconazole.' }, mix: { q: 'أمثلة Hazardous Meds؟', opts: ['Hydroxyurea, Phenytoin, Fluconazole', 'Paracetamol', 'Vitamin C', 'Saline'], exp: 'Hydroxyurea, phenytoin, fluconazole.' } }},
+            { category: '7_high_alert', correct: 3, content: { ar: { q: 'ما هي استراتيجيات التعامل مع الأدوية الخطرة؟', opts: ['تخزين منفصل وعلى رفوف سفلية', 'استخدام PPE (معدات وقاية) وملصقات ماسية', 'توفر عدة انسكاب (Spill Kit) و MSDS', 'جميع ما سبق'], exp: 'تشمل: تخزين منفصل/سفلي، استخدام Chemo PPE، ملصقات ماسية، إجراءات الانسكاب (Spill Kit)، غسل العيون، MSDS.' }, en: { q: 'Strategies for handling Hazardous Medications?', opts: ['Separate/Lower shelf storage', 'Chemo PPE & Diamond labels', 'Spill Kit & MSDS availability', 'All of the above'], exp: 'Store separately/lower shelves, Use Chemo PPE, Diamond-shaped labels, Spill control (Kit), Eye wash, MSDS.' }, mix: { q: 'التعامل مع Hazardous Meds؟', opts: ['Separate Storage', 'PPE & Labels', 'Spill Kit & MSDS', 'All of the above (جميع ما سبق)'], exp: 'تشمل كل إجراءات السلامة المذكورة.' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'هل توجد قائمة محدثة للأدوية الخطرة ومتى آخر تحديث؟', opts: ['نعم، في مكتبة الجودة وغرف الأدوية. آخر تحديث فبراير 2025', 'لا توجد', 'تحديث 2020', 'في المستودع فقط'], exp: 'نعم، القائمة متاحة في CQI وغرف الأدوية (مرفقة بالسياسة). آخر تحديث فبراير 2025.' }, en: { q: 'Updated Hazardous Medication List availability & date?', opts: ['Yes, CQI/Med Rooms. Updated Feb 2025', 'No list', '2020', 'Warehouse only'], exp: 'Yes, accessible in CQI Library & Med Rooms. Last update: February 2025.' }, mix: { q: 'تحديث قائمة Hazardous List؟', opts: ['Feb 2025 (CQI/Med Room)', 'No list', '2020', 'Warehouse'], exp: 'محدثة فبراير 2025.' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'كيف تستخدم عدة تنظيف انسكاب الكيماوي (Chemo Spill Kit)؟', opts: ['تنبيه المنطقة، ارتداء قفازين ورداء (Gown)، استخدام الماصات، التنظيف والتخلص في كيس النفايات', 'استخدام الماء فقط', 'استخدام مكنسة', 'تركها لعمال النظافة'], exp: 'خطوات: 1.تنبيه المنطقة 2.ارتداء قفازين ورداء (أكمام داخلية) 3.واقي عين/وجه/حذاء 4.جمع الزجاج 5.استخدام الماصات 6.التنظيف بالمعادل 7.التخلص في كيس النفايات.' }, en: { q: 'How to use Chemo Spill Kit?', opts: ['Alert, Double gloves/Gown/PPE, Absorb spill, Clean, Dispose in waste bag', 'Water only', 'Broom', 'Leave for cleaners'], exp: 'Alert, Wear double gloves/gown (sleeves tucked)/PPE, Pick glass, Absorb spill (pads/granules), Clean with surfactant, Dispose all in waste bag.' }, mix: { q: 'استخدام Chemo Spill Kit؟', opts: ['Alert + PPE + Absorb + Dispose', 'Water', 'Broom', 'Cleaners'], exp: 'تنبيه، ارتداء الواقيات (Double Gloves/PPE)، امتصاص الانسكاب، والتخلص الآمن.' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'ما هي الأدوية عالية الخطورة؟', opts: ['أدوية تسبب ضرراً كبيراً عند استخدامها بالخطأ', 'أدوية باهظة الثمن', 'أدوية منتهية الصلاحية', 'مضادات حيوية'], exp: 'هي الأدوية التي تسبب خطورة عالية للمريض لو استعملت بالخطأ.' }, en: { q: 'What are High-Alert Medications?', opts: ['Meds with high risk of harm if used in error', 'Expensive meds', 'Expired meds', 'Antibiotics'], exp: 'Medications that bear heightened risk of causing significant patient harm when used in error.' }, mix: { q: 'الأدوية عالية الخطورة (High Alert)؟', opts: ['High risk of harm', 'Expensive', 'Expired', 'Antibiotics'], exp: 'تسبب ضرراً كبيراً عند الخطأ (Significant harm in error).' } }},
+            { category: '7_high_alert', correct: 1, content: { ar: { q: 'أين تخزن الأدوية عالية الخطورة في القسم؟', opts: ['على الرف', 'في خزانة مغلقة منفصلة مع ملصق أحمر', 'في عربة الطوارئ', 'مع الأدوية العادية'], exp: 'تخزن منفصلة، في دولاب مغلق، وعليها علامة مميزة إضافية (لاصق أحمر).' }, en: { q: 'How to store High-Alert Meds in clinical area?', opts: ['Shelf', 'Separate locked cabinet + Red sticker', 'Crash cart', 'With other meds'], exp: 'Stored in locked cabinet separated from other medication and properly labeled with red auxiliary sticker.' }, mix: { q: 'تخزين High Alert Meds؟', opts: ['Shelf', 'Locked cabinet + Red sticker', 'Cart', 'Mixed'], exp: 'خزانة مغلقة منفصلة وملصق أحمر (Locked + Red Sticker).' } }},
+            { category: '7_high_alert', correct: 0, content: { ar: { q: 'كيف يتم التعامل مع المحاليل المركزة (Concentrated Electrolytes)؟', opts: ['تخزين في الصيدلية فقط، تخفيف إجباري، ملصق أحمر وأزرق', 'تخزين في القسم', 'إعطاء مباشر بدون تخفيف', 'لا قيود'], exp: 'يقتصر تخزينها على الصيدلية، يجب تخفيفها، وعليها ملصقات حمراء وزرقاء.' }, en: { q: 'Handling Concentrated Electrolytes?', opts: ['Pharmacy storage only, Mandatory dilution, Red/Blue stickers', 'Ward storage', 'Direct push', 'No restrictions'], exp: 'Storage restricted to Pharmacy, Dilution mandatory, Labeled with red and blue stickers.' }, mix: { q: 'المحاليل المركزة (Concentrated Electrolytes)؟', opts: ['Pharmacy only + Dilution', 'Ward', 'Direct', 'None'], exp: 'تخزين بالصيدلية وتخفيف إجباري (Pharmacy + Dilution).' } }},
+            { category: '7_high_alert', correct: 2, content: { ar: { q: 'ماذا نستخدم عند انسكاب دواء كيميائي/خطر؟', opts: ['ماء وصابون', 'مكنسة', 'عدة انسكاب الكيماوي (Chemo Spill Kit)', 'تجاهله'], exp: 'يجب استخدام عدة تنظيف انسكاب الكيماوي (Chemo Spill Kit).' }, en: { q: 'What to use for Hazardous Drug spill?', opts: ['Water/Soap', 'Broom', 'Chemo Spill Kit', 'Ignore'], exp: 'Must use the Chemo Spill Kit.' }, mix: { q: 'انسكاب دواء خطر (Hazardous Spill)؟', opts: ['Water', 'Broom', 'Chemo Spill Kit', 'Ignore'], exp: 'عدة انسكاب الكيماوي (Chemo Spill Kit).' } }},
+
+            // --- 8. LASA & Errors (13 Questions) ---
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'هل توجد قائمة للأدوية المتشابهة شكلاً ونطقاً (LASA) في المستشفى؟', opts: ['نعم، في مكتبة الجودة وغرفة الأدوية بكل قسم', 'لا توجد', 'عند الطلب فقط', 'في الصيدلية فقط'], exp: 'نعم، القائمة موجودة في مكتبة الجودة (CQI) ومرفقة في غرفة الأدوية بكل وحدة.' }, en: { q: 'Do you have a list of common LASA drugs in PSAFH?', opts: ['Yes, in CQI Library & Medication Room of each unit', 'No list', 'On request only', 'Pharmacy only'], exp: 'Yes, accessible in CQI Library and copy attached in Medication Room of each unit.' }, mix: { q: 'قائمة LASA؟', opts: ['Yes (CQI/Med Room)', 'No', 'Request', 'Pharmacy'], exp: 'موجودة في CQI وغرف الأدوية.' } }},
+            { category: '8_lasa_errors', correct: 3, content: { ar: { q: 'ما هي احتياطات التعامل مع أدوية LASA (8 استراتيجيات)؟', opts: ['التعليم المستمر، استخدام الاسم العلمي والتجاري، كتابة التشخيص', 'تغيير مظهر العبوة، تقليل الأوامر الشفهية', 'الفصل في التخزين، استخدام ملصقات تحذيرية، قراءة الملصق بعناية، مراجعة التشخيص', 'جميع ما سبق'], exp: 'تشمل 8 استراتيجيات: تعليم، اسم علمي/تجاري، تشخيص، تغيير المظهر، تقليل الشفهي، فصل/ملصقات، قراءة الملصق، مراجعة التشخيص.' }, en: { q: 'What precautions (8 strategies) should be followed while handling LASA medications?', opts: ['Education, Generic/Trade name, Diagnosis on Rx', 'Change package look, Minimize verbal orders', 'Separate storage/Stickers, Read label, Review diagnosis', 'All of the above'], exp: 'Includes: Education, Generic/Trade names, Diagnosis, Package appearance, Verbal orders minimize, Separation/Stickers, Label reading, Diagnosis review.' }, mix: { q: 'استراتيجيات التعامل مع High Alert (5 Strategies)؟', opts: ['Limit Access', 'Double Check', 'Standardize', 'All of the above (جميع ما سبق)'], exp: 'تشمل: Limit access, Double Check, Alerts, Standardization, Info access.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'متى كان آخر تحديث لقوائم LASA وماذا أضيف؟', opts: ['الشكل (Look Alike): فبراير 2025 (Cefazolin/Cefotaxime...)، النطق (Sound Alike): سبتمبر (Levetiracetam/Levofloxacin...)', '2020', 'لا يوجد تحديث', '2024'], exp: 'Look Alike: Feb 2025 (Added: Cefazolin/Cefotaxime, Alfazosin/Risperidone...). Sound Alike: Sep (Added: Levetiracetam/Levofloxacin...).' }, en: { q: 'When were LASA lists last updated and what was added?', opts: ['Look Alike: Feb 2025, Sound Alike: Sep. (Added various drugs)', '2020', 'No update', '2024'], exp: 'Look Alike: Feb 2025 (Cefazolin/Cefotaxime, etc.). Sound Alike: Sep (Levetiracetam/Levofloxacin, etc.).' }, mix: { q: 'تحديث قوائم LASA؟', opts: ['Look: Feb 2025, Sound: Sep', '2020', 'No', '2024'], exp: 'تم التحديث في فبراير وسبتمبر 2025.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هي الحالة الخطرة (Hazardous Situation)؟', opts: ['أي ظرف قد يؤدي لخطأ دوائي (مثل تشابه LASA أو التغليف)', 'خطأ وصل للمريض', 'حدث جسيم', 'لا شيء مما سبق'], exp: 'أي ظرف قد يؤدي إلى خطأ دوائي لأسباب عديدة مثل الارتباك بشأن أدوية LASA أو التغليف المماثل.' }, en: { q: 'What is a Hazardous Situation?', opts: ['Any condition leading to potential med error (e.g. LASA confusion)', 'Error reached patient', 'Sentinel event', 'None'], exp: 'Any condition which may lead to medication error due to many reasons such as confusion over LASA drugs or similar packaging.' }, mix: { q: 'الحالة الخطرة (Hazardous Situation)؟', opts: ['Potential error condition (ظرف قد يسبب خطأ)', 'Actual error', 'Sentinel', 'None'], exp: 'ظرف قد يؤدي لخطأ (مثل تشابه الأدوية).' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هو الحدث الوشيك (Medication Near Miss Event)؟', opts: ['خطأ دوائي تم اكتشافه وتصحيحه قبل وصوله للمريض', 'خطأ وصل للمريض ولم يضره', 'خطأ وصل للمريض وضره', 'حدث جسيم'], exp: 'أي خطأ دوائي تم اكتشافه وتصحيحه قبل الوصول إلى المريض.' }, en: { q: 'What is a Medication Near Miss Event?', opts: ['Error detected & corrected before reaching patient', 'Error reached patient (no harm)', 'Error reached patient (harm)', 'Sentinel event'], exp: 'Any medication error which detected and corrected before reaching to the patient.' }, mix: { q: 'الحدث الوشيك (Near Miss)؟', opts: ['Caught before patient (اكتشف قبل الوصول للمريض)', 'Reached patient', 'Harm', 'Sentinel'], exp: 'تم اكتشافه قبل الوصول للمريض (Detected before reaching patient).' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هو الخطأ الدوائي (Medication Error)؟', opts: ['أي حدث يمكن منعه قد يؤدي لاستخدام غير مناسب للدواء أو ضرر للمريض', 'حدث لا يمكن منعه', 'تفاعل حساسية', 'أثر جانبي متوقع'], exp: 'أي حدث يمكن الوقاية منه قد يسبب أو يؤدي إلى استخدام غير مناسب للدواء أو ضرر للمريض.' }, en: { q: 'What is Medication Error?', opts: ['Preventable event leading to inappropriate use or harm', 'Unpreventable event', 'Allergy', 'Side effect'], exp: 'Any preventable event that may cause or lead to inappropriate medication use or patient harm.' }, mix: { q: 'الخطأ الدوائي (Medication Error)؟', opts: ['Preventable event (حدث يمكن منعه)', 'Unpreventable', 'Allergy', 'Side effect'], exp: 'حدث يمكن منعه يؤدي لضرر أو استخدام خاطئ.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هو الحدث الجسيم (Sentinel Event)؟', opts: ['حدث يؤدي لضرر خطير أو وفاة بسبب الرعاية الصحية (ليس المرض الأصلي)', 'خطأ بسيط', 'حدث وشيك', 'تأخير بسيط'], exp: 'أي حدث يؤدي إلى ضرر جسيم للمريض أو وفاته وسببه الرعاية الصحية (خطأ بشري/نظام) وليس مرض المريض.' }, en: { q: 'What is a Sentinel Event?', opts: ['Event leading to serious harm/death caused by healthcare', 'Minor error', 'Near miss', 'Delay'], exp: 'Event leading to serious patient harm or death caused by healthcare (human error/system failure) rather than underlying illness.' }, mix: { q: 'الحدث الجسيم (Sentinel Event)؟', opts: ['Serious harm/Death due to healthcare (ضرر خطير/وفاة)', 'Minor', 'Near miss', 'Delay'], exp: 'ضرر خطير أو وفاة بسبب الرعاية الصحية.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'كيف تبلغ عن خطأ دوائي ومتى؟', opts: ['عبر البوابة المركزية (Central Reporting Portal) خلال 24 ساعة', 'ورقياً بعد أسبوع', 'شفهياً فقط', 'لا يلزم التبليغ'], exp: 'عبر بوابة البلاغات المركزية (أو نموذج ورقي إذا تعطلت). يجب الإبلاغ للصيدلية خلال 24 ساعة. يجب معرفة آخر خطأ حدث في وحدتك.' }, en: { q: 'How and when to report medication error?', opts: ['Central Reporting Portal within 24 hrs', 'Paper after 1 week', 'Verbal only', 'No need'], exp: 'Through central reporting portal (or form if down). Report to pharmacy within 24 hrs. Know your unit\'s last error.' }, mix: { q: 'طريقة ووقت التبليغ (Reporting Method & Time)؟', opts: ['Portal/Form within 24 hrs', 'Paper 1 week', 'Verbal', 'None'], exp: 'عبر البوابة (Portal) خلال 24 ساعة.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ماذا نفعل إذا وصل الخطأ الدوائي للمريض (سواء سبب ضرراً أم لا)؟', opts: ['إبلاغ الطبيب فوراً، ملاحظة العلامات الحيوية، وتعبئة التقرير خلال 24 ساعة', 'تجاهل الأمر إذا لم يحدث ضرر', 'إبلاغ الصيدلية فقط', 'الانتظار لنهاية الشفت'], exp: 'إبلاغ الطبيب المعالج فوراً، وضع المريض تحت الملاحظة ومراقبة العلامات الحيوية، تعبئة التقرير خلال 24 ساعة، وتوثيق الخطأ في ملف المريض.' }, en: { q: 'What to do if medication error reached the patient?', opts: ['Inform physician immediately, Monitor VS, Report within 24 hrs', 'Ignore if no harm', 'Tell pharmacy only', 'Wait for end of shift'], exp: 'Inform treating physician immediately, keep patient under close observation/monitor VS, fill report within 24 hrs, write error in patient record.' }, mix: { q: 'إذا وصل الخطأ للمريض (Error reached patient)؟', opts: ['Inform MD + Monitor + Report (24hrs)', 'Ignore', 'Pharmacy only', 'Wait'], exp: 'إبلاغ الطبيب، المراقبة، وكتابة التقرير خلال 24 ساعة.' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هي أدوية LASA؟', opts: ['المتشابهة في الشكل أو النطق', 'منتهية الصلاحية', 'المخدرة', 'الآمنة'], exp: 'الادوية المتشابهة بالشكل (Look-alike) أو النطق (Sound-alike).' }, en: { q: 'What are LASA medications?', opts: ['Look-alike / Sound-alike', 'Expired', 'Narcotics', 'Safe'], exp: 'Medications that look similar or sound similar.' }, mix: { q: 'أدوية LASA؟', opts: ['Look/Sound alike', 'Expired', 'Narcotics', 'Safe'], exp: 'المتشابهة شكلاً أو نطقاً (Look/Sound alike).' } }},
+            { category: '8_lasa_errors', correct: 1, content: { ar: { q: 'ما لون الملصقات لأدوية LASA؟', opts: ['أحمر للكل', 'أخضر للشكل، أصفر للنطق', 'أزرق', 'أبيض'], exp: 'ملصق أخضر للمتشابهة في الشكل، وأصفر للمتشابهة في النطق.' }, en: { q: 'Sticker colors for LASA?', opts: ['Red for all', 'Green (Look), Yellow (Sound)', 'Blue', 'White'], exp: 'Green sticker for look alike and yellow sticker for sound alike.' }, mix: { q: 'ألوان ملصقات LASA؟', opts: ['Red', 'Green (Look), Yellow (Sound)', 'Blue', 'White'], exp: 'أخضر للشكل (Green/Look)، أصفر للنطق (Yellow/Sound).' } }},
+            { category: '8_lasa_errors', correct: 0, content: { ar: { q: 'ما هو التحقق الثنائي المستقل (Independent Double Check)؟', opts: ['شخصين مؤهلين يتحققان بشكل منفصل', 'شخص واحد مرتين', 'الطبيب فقط', 'لا يلزم'], exp: 'اجراء يلزم شخصين معتمدين يتحققان من العمل بشكل منفصل.' }, en: { q: 'What is Independent Double Check?', opts: ['2 licensed practitioners check separately', '1 person twice', 'Doctor only', 'Not needed'], exp: 'Two individuals check component of work process separately.' }, mix: { q: 'التحقق الثنائي (Double Check)؟', opts: ['2 staff separately', '1 staff', 'Doctor', 'None'], exp: 'شخصين يتحققان بشكل منفصل (Separately).' } }},
+            { category: '8_lasa_errors', correct: 1, content: { ar: { q: 'متى يجب التبليغ عن الخطأ الدوائي؟', opts: ['فوراً', 'خلال 24 ساعة', 'أسبوعياً', 'شهرياً'], exp: 'يجب التبليغ خلال 24 ساعة من حدوث الواقعة.' }, en: { q: 'When to report medication error?', opts: ['Immediately', 'Within 24 hours', 'Weekly', 'Monthly'], exp: 'Should be reported within 24 hrs from occurring.' }, mix: { q: 'وقت التبليغ عن الخطأ (Reporting Time)؟', opts: ['Now', 'Within 24 hrs', 'Weekly', 'Monthly'], exp: 'خلال 24 ساعة (Within 24 hrs).' } }},
+
+            // --- 9. Infection Control (11 Questions) ---
+            { category: '9_infection', correct: 0, content: { ar: { q: 'كم مرة يتم تحديث ورقة مراقبة الضغط السلبي؟', opts: ['يومياً بوجود مريض، أسبوعياً بدون مريض', 'كل ساعة', 'مرة شهرياً', 'عند الخروج فقط'], exp: 'يومياً عند وجود مريض (If there is a patient daily)، وأسبوعياً عند عدم وجود مريض (If there is no patient weekly).' }, en: { q: 'How often do you update Negative Pressure Monitoring Sheet?', opts: ['Daily if patient present, Weekly if empty', 'Hourly', 'Monthly', 'At discharge'], exp: 'If there is a patient: Daily. If no patient: Weekly.' }, mix: { q: 'تحديث ورقة الضغط السلبي (Negative Pressure Monitoring)؟', opts: ['Daily (with patient) / Weekly (empty)', 'Hourly', 'Monthly', 'Discharge'], exp: 'يومياً مع مريض، أسبوعياً بدون مريض.' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'ما هي العناصر الهامة التي تتم مراقبتها في غرفة الضغط السلبي؟', opts: ['تبديل الهواء (12/ساعة)، الحرارة (20-24)، الرطوبة (20-60)، فلتر HEPA', 'الضغط فقط', 'الحرارة فقط', 'الإضاءة'], exp: 'Air Exchange (min 12/hr), Temperature (20-24C), Humidity (20-60%), HEPA filter maintenance.' }, en: { q: 'What important elements are monitored in Negative Pressure Room?', opts: ['Air Exchange (12/hr), Temp (20-24), Humidity (20-60), HEPA', 'Pressure only', 'Temp only', 'Lighting'], exp: 'Air Exchange (min 12/hr), Temperature (20-24C), Humidity (20-60), HEPA filter check.' }, mix: { q: 'عناصر مراقبة الضغط السلبي (Monitoring Elements)؟', opts: ['Air (12/hr), Temp (20-24), Hum (20-60), HEPA', 'Pressure', 'Temp', 'Light'], exp: 'تبديل الهواء، الحرارة، الرطوبة، وفلتر HEPA.' } }},
+            { category: '9_infection', correct: 3, content: { ar: { q: 'ما هي أنواع العزل المستخدمة؟', opts: ['عزل الرذاذ (Droplet)', 'عزل الهواء (Airborne)', 'عزل التلامس (Contact)', 'جميع ما سبق'], exp: 'تشمل: Droplet, Airborne, Contact isolation.' }, en: { q: 'What are the types of used isolation?', opts: ['Droplet', 'Airborne', 'Contact', 'All of the above'], exp: 'Droplet isolation, Airborne isolation, Contact isolation.' }, mix: { q: 'أنواع العزل (Isolation Types)؟', opts: ['Droplet', 'Airborne', 'Contact', 'All of the above (الكل)'], exp: 'تشمل الرذاذ والهواء والتلامس.' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'من هو رئيس لجنة مكافحة العدوى؟', opts: ['مدير المستشفى (Hospital Director)', 'المدير الطبي', 'رئيس التمريض', 'طبيب مكافحة العدوى'], exp: 'مدير المستشفى (Hospital Director).' }, en: { q: 'Who is the Chairman of Infection Control Committee?', opts: ['Hospital Director', 'Medical Director', 'Nursing Director', 'ICP Doctor'], exp: 'Hospital Director.' }, mix: { q: 'رئيس لجنة مكافحة العدوى (Chairman)؟', opts: ['Hospital Director', 'Med Director', 'Nursing', 'Doctor'], exp: 'مدير المستشفى (Hospital Director).' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'ما هو الترتيب الصحيح لارتداء (Donning) وخلع (Removing) الملابس الواقية؟', opts: ['ارتداء: (مريول-كمام-واقي عين-قفاز)، خلع: (قفاز-واقي عين-مريول-كمام)', 'عكس ذلك', 'ارتداء القفاز أولاً', 'خلع الكمام أولاً'], exp: 'Wearing: Gown > Mask > Eye > Gloves. Removing: Gloves > Eye > Gown > Mask.' }, en: { q: 'Correct order for Donning & Removing PPE?', opts: ['Don: Gown-Mask-Eye-Gloves / Remove: Gloves-Eye-Gown-Mask', 'Reverse', 'Don Gloves first', 'Remove Mask first'], exp: 'Wearing: Gown, Mask, Eye/Face Shield, Gloves. Removing: Gloves, Eye/Face Shield, Gown, Mask.' }, mix: { q: 'ترتيب PPE (Donning & Removing)؟', opts: ['Don: Gown>Mask>Eye>Gloves / Remove: Gloves>Eye>Gown>Mask', 'Reverse', 'Gloves first', 'Mask first'], exp: 'الارتداء يبدأ بالمريول وينتهي بالقفاز، الخلع يبدأ بالقفاز وينتهي بالكمام.' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'كيف تعرف مقاس كمام N95 المناسب لك؟', opts: ['من خلال بطاقة اختبار الملاءمة (Fit Test Card) من قسم مكافحة العدوى', 'تجربة أي مقاس', 'سؤال الزملاء', 'مقاس واحد للجميع'], exp: 'يتم إجراء اختبار الملاءمة (Fit Testing) بواسطة قسم مكافحة العدوى وإعطاء بطاقة توضح النوع والمقاس.' }, en: { q: 'How do you know your fit size of N95?', opts: ['Through Fit Test Card given by IC Dept', 'Try any size', 'Ask colleagues', 'One size fits all'], exp: 'Fit testing is performed by infection control department. N95 mask card will be given showing type and size.' }, mix: { q: 'معرفة مقاس N95 (Fit Size)؟', opts: ['Fit Test Card (بطاقة الفحص)', 'Any size', 'Ask', 'One size'], exp: 'عن طريق بطاقة اختبار الملاءمة من مكافحة العدوى.' } }},
+            { category: '9_infection', correct: 3, content: { ar: { q: 'ما هي إجراءات نقل مريض العزل إلى قسم آخر؟', opts: ['إبلاغ القسم المستقبل بالبيانات والاحتياطات', 'ارتداء المريض للكمام الجراحي', 'تعليق بطاقة العزل على العربة', 'جميع ما سبق'], exp: '1. إبلاغ القسم الآخر 2. ارتداء المريض كمام جراحي 3. تعليق بطاقة العزل على العربة.' }, en: { q: 'Procedures for transferring isolation patient?', opts: ['Inform receiving dept', 'Patient wears surgical mask', 'Hang isolation card on trolley', 'All of the above'], exp: 'Inform other dept, Patient wears surgical mask, Isolation type card hanged on trolley.' }, mix: { q: 'نقل مريض العزل (Transferring Isolation Patient)؟', opts: ['Inform dept', 'Patient Mask', 'Isolation Card', 'All of the above (جميع ما سبق)'], exp: 'إبلاغ القسم، لبس الكمام للمريض، تعليق بطاقة العزل.' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'كيف تحمي نفسك من العدوى؟', opts: ['اتباع الاحتياطات: نظافة اليدين (5 لحظات)، وارتداء PPE', 'أخذ مضادات حيوية', 'تجنب المرضى', 'لبس قفازات فقط'], exp: 'بإتباع الاحتياطات: نظافة اليدين، لحظات غسل اليدين الخمس، ومعدات الوقاية الشخصية (PPE).' }, en: { q: 'How to protect yourself from infection?', opts: ['Follow precautions: Hand hygiene (5 moments), PPE', 'Antibiotics', 'Avoid patients', 'Gloves only'], exp: 'By following precautions: cleaning hands, 5 moments for hand hygiene, PPE (mask, gloves, gown, eye protector).' }, mix: { q: 'حماية النفس من العدوى (Self Protection)؟', opts: ['Hand Hygiene + PPE', 'Antibiotics', 'Avoid', 'Gloves'], exp: 'نظافة اليدين وارتداء الواقيات (Hand Hygiene & PPE).' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'ما هي احتياطات العزل الهوائي (Airborne)؟', opts: ['ضغط سلبي، باب مغلق، كمام N95 للموظف، نظافة يدين', 'غرفة عادية، كمام جراحي', 'غرفة مفتوحة', 'قفازات فقط'], exp: 'للدرن/الحصبة/الجدري. تتطلب: ضغط سلبي، باب مغلق دائماً، كمام N95 (فحص الملاءمة)، نظافة يدين. إزالة N95 في الغرفة الأمامية.' }, en: { q: 'What are Airborne Precautions?', opts: ['Negative pressure, Closed door, N95 for staff, Hand hygiene', 'Standard room, Surgical mask', 'Open door', 'Gloves only'], exp: 'TB/Measles/Chickenpox. Negative pressure, Door closed, N95 fit-tested mask, Remove N95 in ante-room.' }, mix: { q: 'احتياطات الهواء (Airborne Precautions)؟', opts: ['Neg Pressure + N95 + Closed Door', 'Surgical Mask', 'Open Door', 'Gloves'], exp: 'ضغط سلبي، كمام N95، إغلاق الباب.' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'ما هي احتياطات العزل الرذاذي (Droplet)؟', opts: ['غرفة مفردة، باب مغلق، كمام جراحي، كمام للمريض عند الخروج', 'ضغط سلبي، N95', 'غرفة مشتركة', 'بدون كمام'], exp: 'للالتهاب السحايا/الأنفلونزا. تتطلب: غرفة مفردة، باب مغلق، كمام جراحي، كمام جراحي للمريض عند النقل.' }, en: { q: 'What are Droplet Precautions?', opts: ['Single room, Closed door, Surgical mask, Mask on patient for transport', 'Negative pressure, N95', 'Shared room', 'No mask'], exp: 'Meningitis/Influenza. Single room, Door closed, Surgical mask, Mask on patient if leaving room.' }, mix: { q: 'احتياطات الرذاذ (Droplet Precautions)؟', opts: ['Single Room + Surgical Mask', 'Neg Pressure + N95', 'Shared', 'No mask'], exp: 'غرفة مفردة وكمام جراحي (Surgical Mask).' } }},
+            { category: '9_infection', correct: 0, content: { ar: { q: 'ما هي احتياطات العزل التلامسي (Contact)؟', opts: ['غرفة مفردة، مريول وقفاظات (ارتداء قبل الدخول وخلع قبل الخروج)، عدم مشاركة الأدوات', 'كمام N95', 'باب مفتوح', 'بدون قفازات'], exp: 'للجرب/MDRO. تتطلب: غرفة مفردة، باب مغلق، مريول وقفازات (ارتداء قبل الدخول/خلع قبل الخروج)، تنظيف الأدوات المشتركة.' }, en: { q: 'What are Contact Precautions?', opts: ['Single room, Gown & Gloves (Don before enter/Remove before exit), No sharing items', 'N95', 'Open door', 'No gloves'], exp: 'Scabies/MDRO. Single room, Door closed, Gown & Gloves, Disinfect shared items.' }, mix: { q: 'احتياطات التلامس (Contact Precautions)؟', opts: ['Gown & Gloves + Single Room', 'N95', 'Open door', 'No gloves'], exp: 'مريول وقفازات وغرفة مفردة.' } }},
+
+            // --- 10. FMS & Safety (12 Questions) ---
+            { category: '10_fms', correct: 0, content: { ar: { q: 'ماذا يعني الكود الأصفر (Code Yellow)؟', opts: ['كارثة (داخلية/خارجية)', 'حريق', 'تهديد بقنبلة', 'توقف قلب'], exp: 'Code Yellow: Disaster (Internal/External).' }, en: { q: 'What does Code Yellow stand for?', opts: ['Disaster (Internal/External)', 'Fire', 'Bomb Threat', 'Cardiac Arrest'], exp: 'Code Yellow – in case of (internal /External) Disaster.' }, mix: { q: 'معنى Code Yellow؟', opts: ['Disaster (كارثة)', 'Fire', 'Bomb', 'Arrest'], exp: 'كارثة داخلية أو خارجية.' } }},
+            { category: '10_fms', correct: 2, content: { ar: { q: 'ماذا يعني الكود الأسود (Code Black)؟', opts: ['حريق', 'طقس سيء', 'تهديد بقنبلة', 'انكباب كيميائي'], exp: 'Code Black: Bomb Threat.' }, en: { q: 'What does Code Black stand for?', opts: ['Fire', 'Severe Weather', 'Bomb Threat', 'Chemical Spill'], exp: 'Code Black – Bomb Threat.' }, mix: { q: 'معنى Code Black؟', opts: ['Fire', 'Weather', 'Bomb Threat (قنبلة)', 'Spill'], exp: 'تهديد بوجود قنبلة.' } }},
+            { category: '10_fms', correct: 1, content: { ar: { q: 'ماذا يعني الكود الرمادي (Code Grey)؟', opts: ['حريق', 'طقس سيء (Severe Weather)', 'قنبلة', 'اختطاف'], exp: 'Code Grey: Severe Weather.' }, en: { q: 'What does Code Grey stand for?', opts: ['Fire', 'Severe Weather', 'Bomb', 'Abduction'], exp: 'Code Grey – Severe Weather.' }, mix: { q: 'معنى Code Grey؟', opts: ['Fire', 'Severe Weather (طقس سيء)', 'Bomb', 'Abduction'], exp: 'طقس سيء.' } }},
+            { category: '10_fms', correct: 0, content: { ar: { q: 'ماذا يعني الكود البرتقالي (Code Orange)؟', opts: ['انسكاب مواد خطرة (إشعاعية/بيولوجية/كيميائية)', 'حريق', 'سلاح', 'اختطاف'], exp: 'Code Orange: Radioactive /biological/ chemical spill.' }, en: { q: 'What does Code Orange stand for?', opts: ['Radioactive/biological/chemical spill', 'Fire', 'Weapon', 'Abduction'], exp: 'Code Orange – Radioactive /biological/ chemical spill.' }, mix: { q: 'معنى Code Orange؟', opts: ['Spill (انسكاب مواد خطرة)', 'Fire', 'Weapon', 'Abduction'], exp: 'انسكاب إشعاعي/بيولوجي/كيميائي.' } }},
+            { category: '10_fms', correct: 0, content: { ar: { q: 'ماذا يعني الكود الفضي (Code Silver)؟', opts: ['شخص يحمل سلاح / وضع رهائن', 'حريق', 'عنف بدون سلاح', 'اختطاف طفل'], exp: 'Code Silver: Active shooter with Weapon, hostage situation.' }, en: { q: 'What does Code Silver stand for?', opts: ['Active shooter with Weapon, hostage situation', 'Fire', 'Violent Situation (no weapons)', 'Child Abduction'], exp: 'Code Silver – Active shooter with Weapon, hostage situation.' }, mix: { q: 'معنى Code Silver؟', opts: ['Active Shooter (سلاح/رهائن)', 'Fire', 'Violence (no weapon)', 'Abduction'], exp: 'شخص مسلح أو وضع رهائن.' } }},
+            { category: '10_fms', correct: 2, content: { ar: { q: 'ماذا يعني الكود الأبيض (Code White)؟', opts: ['حريق', 'سلاح', 'عنف / اعتداء (بدون أسلحة)', 'طقس سيء'], exp: 'Code White: Combative abuse, Assault/Abuse behavior, Violent Situation (with no weapons).' }, en: { q: 'What does Code White stand for?', opts: ['Fire', 'Weapon', 'Violent Situation (with no weapons)', 'Severe Weather'], exp: 'Code White – Combative abuse, Assault/Abuse behavior, Violent Situation (with no weapons).' }, mix: { q: 'معنى Code White؟', opts: ['Fire', 'Weapon', 'Violent Situation (عنف بدون سلاح)', 'Weather'], exp: 'سلوك عنيف أو اعتداء (بدون أسلحة).' } }},
+            { category: '10_fms', correct: 3, content: { ar: { q: 'ماذا يعني الكود الوردي (Code Pink)؟', opts: ['حريق', 'توقف قلب', 'انسكاب', 'اختطاف طفل/رضيع'], exp: 'Code Pink: Child/Infant Abduction.' }, en: { q: 'What does Code Pink stand for?', opts: ['Fire', 'Cardiac Arrest', 'Spill', 'Child/Infant Abduction'], exp: 'Code Pink – Child/Infant Abduction.' }, mix: { q: 'معنى Code Pink؟', opts: ['Fire', 'Arrest', 'Spill', 'Child Abduction (اختطاف طفل)'], exp: 'اختطاف طفل أو رضيع.' } }},
+            { category: '10_fms', correct: 0, content: { ar: { q: 'ماذا يجب أن تعرف عن مواقع السلامة من الحريق؟', opts: ['موقع أقرب مخرج طوارئ وأقرب طفاية حريق', 'مكتب المدير', 'الكافيتريا', 'دورات المياه'], exp: 'يجب أن تعرف مكان: أقرب باب خروج طوارئ (Nearest Fire Exit door) وأقرب طفاية حريق (Nearest Fire Extinguisher).' }, en: { q: 'What should you know regarding fire safety locations?', opts: ['Nearest Fire Exit door & Fire Extinguisher', 'Manager office', 'Cafeteria', 'Restrooms'], exp: 'You should know where is the nearest Fire Exit door and where is the nearest Fire Extinguisher.' }, mix: { q: 'مواقع السلامة (Safety Locations)؟', opts: ['Nearest Exit & Extinguisher (مخرج وطفاية)', 'Manager', 'Cafeteria', 'Restrooms'], exp: 'أقرب مخرج حريق وأقرب طفاية حريق.' } }},
+            { category: '10_fms', correct: 1, content: { ar: { q: 'ما هو رقم الطوارئ (تفعيل الكود)؟', opts: ['911', '2222', '999', '1111'], exp: 'الرقم 2222.' }, en: { q: 'Number to activate emergency code?', opts: ['911', '2222', '999', '1111'], exp: 'Dial 2222.' }, mix: { q: 'رقم الطوارئ (Emergency Number)؟', opts: ['911', '2222', '999', '1111'], exp: '2222.' } }},
+            { category: '10_fms', correct: 0, content: { ar: { q: 'ماذا يعني RACE في الحريق؟', opts: ['Rescue, Alarm, Contain, Extinguish', 'Run, Ask, Call, Exit', 'Read, Act, Call, End', 'None'], exp: 'إنقاذ، إنذار، احتواء، إطفاء.' }, en: { q: 'What does RACE stand for?', opts: ['Rescue, Alarm, Contain, Extinguish', 'Run, Ask, Call, Exit', 'Read, Act, Call, End', 'None'], exp: 'Rescue, Alarm, Contain, Extinguish.' }, mix: { q: 'معنى RACE؟', opts: ['Rescue, Alarm, Contain, Extinguish', 'Run...', 'Read...', 'None'], exp: 'Rescue, Alarm, Contain, Extinguish.' } }},
+            { category: '10_fms', correct: 2, content: { ar: { q: 'كيف تستخدم طفاية الحريق (PASS)؟', opts: ['Pull, Aim, Shake, Sweep', 'Push, Aim, Squeeze, Sweep', 'Pull, Aim, Squeeze, Sweep', 'Pull, Ask, See, Stop'], exp: 'اسحب، وجه، اضغط، حرك (Pull, Aim, Squeeze, Sweep).' }, en: { q: 'PASS steps for extinguisher?', opts: ['Pull, Aim, Shake, Sweep', 'Push, Aim, Squeeze, Sweep', 'Pull, Aim, Squeeze, Sweep', 'Pull, Ask, See, Stop'], exp: 'Pull, Aim, Squeeze, Sweep.' }, mix: { q: 'خطوات الطفاية (PASS)؟', opts: ['Pull, Aim, Shake, Sweep', 'Push...', 'Pull, Aim, Squeeze, Sweep', 'Pull...'], exp: 'Pull, Aim, Squeeze, Sweep.' } }},
+            { category: '10_fms', correct: 1, content: { ar: { q: 'ما هو الكود الخاص بفشل المرافق؟', opts: ['Code Red', 'Code Brown', 'Code Blue', 'Code Yellow'], exp: 'Code Brown (Utility Failure).' }, en: { q: 'Code for Utility Failure?', opts: ['Code Red', 'Code Brown', 'Code Blue', 'Code Yellow'], exp: 'Code Brown.' }, mix: { q: 'كود فشل المرافق (Utility Failure)؟', opts: ['Red', 'Brown', 'Blue', 'Yellow'], exp: 'Code Brown.' } }},
+
+            // --- 11. Medical Gases (5 Questions) ---
+            { category: '11_med_gas', correct: 0, content: { ar: { q: 'من يحتفظ بمفتاح صمام الغازات الطبية؟', opts: ['رئيسة التمريض (Head Nurse)', 'الأمن', 'الصيانة', 'المدير'], exp: 'يجب أن تعرف رئيسة الممرضات مكان المفتاح والخطة.' }, en: { q: 'Who holds the Medical Gas valve key?', opts: ['Head Nurse', 'Security', 'Maintenance', 'Director'], exp: 'Head Nurse.' }, mix: { q: 'مفتاح الغازات (Gas Key) مع؟', opts: ['Head Nurse', 'Security', 'Maintenance', 'Director'], exp: 'رئيسة التمريض (Head Nurse).' } }},
+            { category: '11_med_gas', correct: 1, content: { ar: { q: 'كيف يتم إغلاق صمام الغاز؟', opts: ['عكس عقارب الساعة', 'مع عقارب الساعة (Clockwise)', 'سحب للخارج', 'دفع للداخل'], exp: 'باتجاه عقارب الساعة للإغلاق (Clockwise to close).' }, en: { q: 'How to close the gas valve?', opts: ['Counter-clockwise', 'Clockwise', 'Pull', 'Push'], exp: 'Clockwise to close.' }, mix: { q: 'إغلاق الصمام (Close Valve)؟', opts: ['Counter-clockwise', 'Clockwise', 'Pull', 'Push'], exp: 'مع عقارب الساعة (Clockwise).' } }},
+            { category: '11_med_gas', correct: 0, content: { ar: { q: 'متى تستبدل أسطوانة الأكسجين؟', opts: ['أقل من 500 PSI', 'فارغة تماماً', 'أقل من 1000', 'يومياً'], exp: 'أقل من 500 PSI (للأسطوانات الكبيرة والصغيرة).' }, en: { q: 'When to replace Oxygen cylinder?', opts: ['Less than 500 PSI', 'Empty', 'Less than 1000', 'Daily'], exp: 'Less than 500 PSI.' }, mix: { q: 'استبدال الأسطوانة (Replace Cylinder)؟', opts: ['< 500 PSI', 'Empty', '< 1000', 'Daily'], exp: 'أقل من 500 PSI.' } }},
+            { category: '11_med_gas', correct: 0, content: { ar: { q: 'متى يجب استبدال أسطوانة الأكسجين في سيارة الإسعاف؟', opts: ['عندما يكون الضغط أقل من 1500 PSI', 'عندما تفرغ', 'أقل من 500 PSI', 'يومياً'], exp: 'في سيارة الإسعاف: يجب الاستبدال إذا كان الضغط أقل من 1500 PSI.' }, en: { q: 'When to replace Oxygen cylinder in Ambulance?', opts: ['Less than 1500 PSI', 'Empty', 'Less than 500 PSI', 'Daily'], exp: 'In Ambulance: Less than 1500 PSI.' }, mix: { q: 'استبدال أكسجين الإسعاف (Ambulance O2)؟', opts: ['< 1500 PSI', 'Empty', '< 500', 'Daily'], exp: 'أقل من 1500 PSI.' } }},
+            { category: '11_med_gas', correct: 1, content: { ar: { q: 'من يجب إبلاغه قبل وبعد إغلاق صمام الغاز الطبي؟', opts: ['المدير المناوب', 'قسم الغازات الطبية', 'الأمن', 'لا أحد'], exp: 'يجب إبلاغ قسم الغازات الطبية (Medical Gas Department) قبل وبعد الإجراء.' }, en: { q: 'Who to inform before and after closing med gas valve?', opts: ['Duty Manager', 'Medical Gas Department', 'Security', 'No one'], exp: 'Inform Medical Gas Department before and after the procedure.' }, mix: { q: 'من تبلغ عند إغلاق الغاز (Inform whom)؟', opts: ['Manager', 'Medical Gas Dept', 'Security', 'None'], exp: 'قسم الغازات الطبية.' } }},
+
+            // --- 12. Radiation Safety (4 Questions) ---
+            { category: '12_radiation', correct: 0, content: { ar: { q: 'من هو مسؤول الحماية من الإشعاع (RSO)؟', opts: ['إبراهيم السيد', 'مدير الأشعة', 'المدير الطبي', 'رئيس التمريض'], exp: 'أخصائي أول فيزياء طبية / إبراهيم السيد.' }, en: { q: 'Who is Radiation Safety Officer (RSO)?', opts: ['Ibrahim Alsayed', 'Rad Manager', 'Med Director', 'Nursing Head'], exp: 'Senior Medical Physicist / Ibrahim Alsayed.' }, mix: { q: 'مسؤول الإشعاع (RSO)؟', opts: ['Ibrahim Alsayed', 'Manager', 'Med Director', 'Nursing'], exp: 'إبراهيم السيد.' } }},
+            { category: '12_radiation', correct: 1, content: { ar: { q: 'الحد السنوي للجرعة الإشعاعية للموظفين؟', opts: ['50 mSv', '20 mSv', '5 mSv', '10 mSv'], exp: '20 mSv.' }, en: { q: 'Annual Radiation Dose limit for staff?', opts: ['50 mSv', '20 mSv', '5 mSv', '10 mSv'], exp: '20 mSv.' }, mix: { q: 'حد الجرعة السنوية (Annual Dose)؟', opts: ['50 mSv', '20 mSv', '5 mSv', '10 mSv'], exp: '20 mSv.' } }},
+            { category: '12_radiation', correct: 2, content: { ar: { q: 'أين يوضع جهاز OSL عند لبس الرصاص؟', opts: ['فوق الرصاص', 'في الجيب', 'تحت الرصاص (بين الرقبة والصدر)', 'على اليد'], exp: 'يوضع تحت مريول الرصاص (Under Lead Apron) بين الرقبة والصدر.' }, en: { q: 'Where to wear OSL with Lead Apron?', opts: ['Over apron', 'Pocket', 'Under apron (Neck/Chest)', 'Hand'], exp: 'Under Lead Apron, between neck and chest.' }, mix: { q: 'موقع OSL مع الرصاص؟', opts: ['Over', 'Pocket', 'Under Apron', 'Hand'], exp: 'تحت الرصاص (Under Lead Apron).' } }},
+            { category: '12_radiation', correct: 0, content: { ar: { q: 'كم مرة يستبدل OSL سنوياً؟', opts: ['4 مرات (ربع سنوي)', 'مرة', 'مرتين', 'شهرياً'], exp: '4 مرات في السنة (Quarterly).' }, en: { q: 'Frequency of OSL replacement?', opts: ['4 times/year (Quarterly)', 'Once', 'Twice', 'Monthly'], exp: '4 Times in a year.' }, mix: { q: 'استبدال OSL؟', opts: ['4 times/year', 'Once', 'Twice', 'Monthly'], exp: '4 مرات في السنة.' } }}
+        ]; // Total Questions: 101 Questions
+
+        // Get total number of questions for the Comprehensive Exam button
+        const TOTAL_COMPREHENSIVE_QUESTIONS = questionsDatabase.length;
+
+
+        // CRITICAL LOGIC CHANGE: COMPREHENSIVE EXAM ORDER
+        const getQuestions = (catId) => {
+            if (catId === 'all') {
+                // Return ALL questions ordered by category 1 to 12 sequentially (Required for Comprehensive Exam)
+                const catOrder = categories.map(c => c.id);
+                const sortedQuestions = catOrder.flatMap(id => 
+                    questionsDatabase.filter(q => q.category === id)
+                );
+                return sortedQuestions;
+            }
+            const filtered = questionsDatabase.filter(q => q.category === catId);
+            return filtered.length > 0 ? filtered : [];
+        };
+
+        // Component: Certificate (Redesigned for English Only & Official Look)
+        const Certificate = ({ user, score, total, date }) => {
+            return (
+                <div id="certificate-view" className="hidden print:flex flex-col items-center w-full h-full pt-10 bg-white text-black font-serif-en relative">
+                    {/* Border Frame */}
+                    <div className="absolute inset-4 border-4 border-[#C5A059] pointer-events-none"></div>
+                    <div className="absolute inset-6 border-2 border-[#1a365d] pointer-events-none"></div>
+
+                    {/* Header */}
+                    <div className="text-center space-y-2 mb-12 mt-8 z-10">
+                        <h1 className="text-3xl font-bold text-[#1a365d] tracking-wide uppercase border-b-2 border-[#C5A059] pb-2 px-8">PRINCE SULTAN ARMED FORCES HOSPITAL</h1>
+                        <h2 className="text-xl font-bold text-[#2d3748] tracking-wider">NURSING ADMINISTRATION</h2>
+                        <h3 className="text-lg font-bold text-[#C5A059] tracking-widest">NURSING EDUCATION AND STAFF DEVELOPMENT</h3>
+                    </div>
+
+                    {/* Content */}
+                    <div className="text-center z-10 flex-grow flex flex-col justify-center">
+                        <Award size={80} className="w-20 h-20 text-[#C5A059] mx-auto mb-6" />
+                        <h1 className="text-5xl font-bold text-[#1a365d] mb-4 uppercase tracking-widest">Certificate of Achievement</h1>
+                        <p className="text-xl text-gray-600 italic mb-8">This certificate is proudly presented to</p>
+                        
+                        <h2 className="text-4xl font-bold text-black border-b-2 border-gray-300 inline-block pb-2 px-12 mb-6">{user.name}</h2>
+                        
+                        <div className="flex justify-center gap-12 text-lg text-gray-800 mb-8 font-sans">
+                            <p><strong>ID:</strong> {user.id}</p>
+                            <p><strong>Department:</strong> {user.dept}</p>
+                        </div>
+
+                        <p className="text-2xl text-gray-700 leading-relaxed max-w-4xl mx-auto px-8">
+                            For successfully completing the <br/><span className="font-bold text-[#1a365d]">Safety Hero Program Comprehensive Exam</span><br/>
+                            demonstrating exceptional knowledge in Essential Safety Requirements.
+                        </p>
+                    </div>
+
+                    {/* Footer / Stats */}
+                    <div className="flex justify-between w-3/4 mt-auto mb-20 z-10 border-t pt-8 border-gray-300">
+                        <div className="text-center">
+                            <p className="text-gray-500 uppercase text-sm tracking-wider">Date Issued</p>
+                            <p className="text-xl font-bold text-[#1a365d]">{date}</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="inline-block border-4 border-[#C5A059] rounded-full p-4 rotate-[-10deg] opacity-80">
+                                <p className="text-xs font-bold text-[#C5A059]">OFFICIAL</p>
+                                <p className="text-xl font-bold text-[#1a365d]">PASSED</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-gray-500 uppercase text-sm tracking-wider">Final Score</p>
+                            <p className="text-3xl font-bold text-[#1a365d]">{Math.round((score / total) * 100)}%</p>
+                        </div>
+                    </div>
+                    
+                    {/* Watermark */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none z-0">
+                        <Shield size={500} />
+                    </div>
+                </div>
+            );
+        };
+
+        const LandingScreen = ({ darkMode, t, onStart, toggleDarkMode, hospital_name, admin_name, edu_name, hero_slogan, hero_slogan_en, onResume, hasSavedState }) => (
+            <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} transition-colors duration-300`}>
+                <div className="p-4 flex justify-end">
+                    <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                        {darkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6 text-slate-600" />}
+                    </button>
+                </div>
+                <div className="text-center px-4 mt-4 space-y-2 animate-fade-in">
+                    {/* Updated Hospital Name Color */}
+                    <h1 className="text-xl md:text-3xl font-bold text-blue-800 dark:text-blue-400 tracking-wide uppercase">{hospital_name}</h1>
+                    <h2 className="text-lg md:text-xl font-semibold text-slate-600 dark:text-slate-300">{admin_name}</h2>
+                    {/* Updated Dept Name with Magic Gradient */}
+                    <h3 className="text-sm md:text-lg font-bold text-gradient-magic uppercase tracking-wider">{edu_name}</h3>
+                </div>
+                <div className="flex-grow flex flex-col items-center justify-center text-center p-6 space-y-8">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-green-400 blur-3xl opacity-20 rounded-full"></div>
+                        <Shield size={224} className="w-40 h-40 md:w-56 md:h-56 text-emerald-500 relative z-10 drop-shadow-2xl animate-bounce-slow" />
+                    </div>
+                    <div className="space-y-4 z-10">
+                        <h1 className="text-4xl md:text-6xl font-black text-emerald-500 tracking-tighter drop-shadow-sm uppercase">{hero_slogan_en}</h1>
+                        {/* Two-tone Slogan */}
+                        <h1 className="text-3xl md:text-5xl font-bold">
+                            <span className="text-blue-600">أنت بطل </span>
+                            <span className="text-emerald-500">السلامة</span>
+                        </h1>
+                    </div>
+                    
+                    <div className="flex flex-col gap-4 w-full max-w-xs">
+                        {hasSavedState && (
+                            <button onClick={onResume} className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-yellow-500 font-pj rounded-xl focus:outline-none hover:bg-yellow-600 hover:scale-105 shadow-xl">
+                                <span className="flex items-center gap-2"><PlayCircle size={20} /> {t.resume_btn}</span>
+                            </button>
+                        )}
+                        <button onClick={onStart} className="group relative inline-flex flex-col items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-blue-600 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 hover:bg-blue-700 hover:scale-105 shadow-xl">
+                            <span className="flex items-center gap-2">{t.start_journey} <ArrowRight size={20} className="w-5 h-5 animate-pulse" /></span>
+                            <span className="text-xs font-normal opacity-90 mt-1 tracking-wide">{t.start_journey_en}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const UserInfoScreen = ({ darkMode, t, userInfo, setUserInfo, onNext, onHome }) => (
+            <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                <div className="absolute top-4 left-4"> 
+                    <button onClick={onHome} className="p-2 rounded-full bg-white dark:bg-slate-800 shadow hover:scale-110 transition"><Home size={20} className="text-blue-600" /></button> 
+                </div>
+                <div className={`w-full max-w-md p-8 rounded-2xl shadow-2xl ${darkMode ? 'bg-slate-800 text-white' : 'bg-white text-slate-900'}`}>
+                    <div className="text-center mb-8">
+                        <User size={48} className="w-12 h-12 mx-auto mb-2 text-blue-500" />
+                        <h2 className="text-2xl font-bold">{t.enter_details}</h2>
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1 flex items-center gap-2"><User size={16}/> {t.name}</label>
+                            <input type="text" value={userInfo.name} onChange={(e) => { const val = e.target.value; if (/^[a-zA-Z\u0600-\u06FF\s\u0621-\u064A]*$/.test(val)) setUserInfo({...userInfo, name: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="Enter full name" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 flex items-center gap-2"><Hash size={16}/> {t.id}</label>
+                            <input type="text" value={userInfo.id} onChange={(e) => { const val = e.target.value; if (/^[0-9]*$/.test(val)) setUserInfo({...userInfo, id: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="12345" inputMode="numeric" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 flex items-center gap-2"><Building size={16}/> {t.dept}</label>
+                            <input type="text" value={userInfo.dept} onChange={(e) => { const val = e.target.value; if (/^[a-zA-Z\u0600-\u06FF\s\u0621-\u064A]*$/.test(val)) setUserInfo({...userInfo, dept: val}); }} className="w-full p-3 rounded-lg border border-gray-300 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-blue-500" placeholder="ER, ICU, etc." />
+                        </div>
+                        <button disabled={!userInfo.name || !userInfo.id || !userInfo.dept} onClick={onNext} className="w-full py-3 mt-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition">{t.start_btn}</button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const LanguageScreen = ({ darkMode, setLanguage, onNext, onHome }) => (
+            <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${darkMode ? 'bg-slate-900' : 'bg-slate-50 text-slate-900'}`}>
+                <div className="absolute top-4 left-4"> 
+                    <button onClick={onHome} className="p-2 rounded-full bg-white dark:bg-slate-800 shadow hover:scale-110 transition"><Home size={20} className="text-blue-600" /></button> 
+                </div>
+                <Globe size={64} className="w-16 h-16 mb-6 text-blue-500 animate-spin-slow" />
+                <h2 className="text-2xl font-bold mb-8">Select Language / اختر اللغة</h2>
+                <div className="grid gap-4 w-full max-w-sm">
+                    <button onClick={() => {setLanguage('ar'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">العربية</span> <span className="text-2xl">🇸🇦</span></button>
+                    <button onClick={() => {setLanguage('en'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">English</span> <span className="text-2xl">🇺🇸</span></button>
+                    <button onClick={() => {setLanguage('mix'); onNext();}} className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md hover:scale-105 transition flex justify-between items-center border border-gray-200 dark:border-gray-700"><span className="font-bold text-lg">مدمج / Mixed</span> <span className="text-2xl">🔄</span></button>
+                </div>
+            </div>
+        );
+
+        const MenuScreen = ({ darkMode, t, language, dir, toggleDarkMode, setUserInfoView, setExamMode, setGameData, setActiveCategory, setGameState, overallScore, overallTotal }) => (
+            <div className={`min-h-screen p-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} dir={dir}>
+                <div className="max-w-5xl mx-auto">
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 className="text-2xl font-bold text-blue-800 dark:text-blue-400 uppercase">{t.hospital_name}</h1>
+                            <p className="text-sm font-bold text-gradient-magic">{t.edu_name}</p>
+                        </div>
+                        <div className="flex gap-2">
+                           <button onClick={setUserInfoView} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"><User size={20}/></button>
+                           <button onClick={toggleDarkMode} className="p-2 rounded-full bg-gray-200 dark:bg-gray-700">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
+                        </div>
+                    </div>
+                    {/* Updated Comprehensive Exam Button with Total Question Count */}
+                    <button onClick={() => { 
+                        setExamMode('comprehensive'); 
+                        setGameData({ score: 0, total: 0, incorrectQuestions: [] }); 
+                        setActiveCategory('all'); 
+                        setGameState('playing'); 
+                    }} className="w-full mb-8 bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.01] transition flex items-center justify-center gap-4 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                        <Trophy size={48} className="w-12 h-12 animate-bounce-slow" />
+                        <div className="text-start">
+                            <h2 className="text-2xl font-bold">{t.mixed_exam}</h2>
+                            <p className="opacity-90 text-sm">{TOTAL_COMPREHENSIVE_QUESTIONS} Questions sequentially (85% required)</p>
+                        </div>
+                    </button>
+                    
+                    {overallTotal > 0 && (
+                        <div className="mb-4 p-4 bg-blue-50 dark:bg-slate-800 rounded-xl border border-blue-200 text-center">
+                            <p className="text-sm text-gray-500">Current Session Cumulative Score</p>
+                            <p className="text-xl font-bold text-blue-600">{overallScore} / {overallTotal} ({Math.round((overallScore/overallTotal)*100)}%)</p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {categories.map((cat) => (
+                            <button key={cat.id} onClick={() => { 
+                                setExamMode('single'); 
+                                setGameData({ score: 0, total: 0, incorrectQuestions: [] }); 
+                                setActiveCategory(cat.id); 
+                                setGameState('playing'); 
+                            }} className={`${cat.color} text-white p-4 rounded-xl shadow-md hover:scale-105 transition flex flex-col items-center justify-center gap-3 h-32 relative overflow-hidden`}>
+                                <div className="bg-white/20 p-2 rounded-full">{cat.icon}</div>
+                                <span className="font-bold text-sm text-center">{cat.names[language]}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const PlayingScreen = ({ darkMode, t, language, dir, activeCategory, onFinish, onBack, initialQIndex = 0, initialScore = 0, initialTotal = 0 }) => {
+            
+            // LOAD QUESTIONS
+            const questions = useMemo(() => {
+                let qs = getQuestions(activeCategory);
+                return qs.filter(q => 
+                    q.content && q.content[language] && q.content[language].q
+                );
+            }, [activeCategory, language]);
+
+            // STATE
+            const [currentQIndex, setCurrentQIndex] = useState(initialQIndex);
+            const [selectedOption, setSelectedOption] = useState(null);
+            const [isAnswered, setIsAnswered] = useState(false);
+            const [localGameData, setLocalGameData] = useState({ score: initialScore, total: initialTotal, incorrectQuestions: [] });
+            
+            // Save Progress Effect
+            useEffect(() => {
+                const savedState = {
+                    currentQIndex,
+                    score: localGameData.score,
+                    total: localGameData.total,
+                    activeCategory,
+                    gameState: 'playing',
+                    language
+                };
+                localStorage.setItem('nursingHeroState', JSON.stringify(savedState));
+            }, [currentQIndex, localGameData, activeCategory, language]);
+
+
+            const currentQ = questions[currentQIndex];
+            
+            if (!currentQ || questions.length === 0) {
+                 return (
+                    <div className={`min-h-screen flex flex-col items-center justify-center p-8 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`} dir={dir}>
+                        <h1 className="text-2xl font-bold text-red-500 mb-4">Error: No Questions Found or Loading...</h1>
+                        <button onClick={onBack} className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">{t.back}</button>
+                    </div>
+                );
+            }
+
+            const content = currentQ.content[language];
+
+            const handleAnswer = (idx) => {
+                if(isAnswered) return;
+                setSelectedOption(idx);
+                setIsAnswered(true);
+                const isCorrect = idx === currentQ.correct;
+                setLocalGameData(prev => ({
+                    ...prev,
+                    score: isCorrect ? prev.score + 1 : prev.score,
+                    total: prev.total + 1,
+                    incorrectQuestions: isCorrect ? prev.incorrectQuestions : [...prev.incorrectQuestions, currentQ]
+                }));
+            };
+
+            const handleNext = () => {
+                localStorage.removeItem('nursingHeroState'); // Clear save on finish or on next question
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (currentQIndex < questions.length - 1) {
+                    setSelectedOption(null);
+                    setIsAnswered(false);
+                    setCurrentQIndex(prev => prev + 1);
+                } else {
+                    onFinish(localGameData.score, localGameData.total, localGameData.incorrectQuestions);
+                }
+            };
+
+            return (
+                <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} dir={dir}>
+                    <div className="p-4 flex justify-between items-center bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-20">
+                        <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"><Home size={20} /></button>
+                        <div className="font-bold">{t.score}: {localGameData.score} / {currentQIndex + (isAnswered ? 1 : 0)}</div>
+                        <div className="text-sm opacity-60">Q: {currentQIndex + 1}/{questions.length}</div>
+                    </div>
+                    <div className="w-full bg-gray-200 h-2 dark:bg-slate-700">
+                        <div className="bg-blue-500 h-2 transition-all duration-500" style={{ width: `${((currentQIndex + (isAnswered ? 1 : 0)) / questions.length) * 100}%` }}></div>
+                    </div>
+                    <div className="flex-grow flex flex-col items-center p-4 max-w-3xl mx-auto w-full">
+                        <div className={`w-full p-6 rounded-2xl shadow-lg mb-6 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                            <h2 className="text-xl font-bold mb-6 leading-relaxed">{content.q}</h2>
+                            <div className="space-y-3">
+                                {content.opts.map((opt, idx) => {
+                                    let btnStyle = darkMode ? "bg-slate-700 hover:bg-slate-600" : "bg-gray-50 hover:bg-blue-50 border-gray-200";
+                                    if (isAnswered) {
+                                        if (idx === currentQ.correct) btnStyle = "bg-green-100 text-green-800 border-green-500 dark:bg-green-900 dark:text-green-100";
+                                        else if (idx === selectedOption) btnStyle = "bg-red-100 text-red-800 border-red-500 dark:bg-red-900 dark:text-red-100";
+                                        else btnStyle = "opacity-50 cursor-not-allowed";
+                                    }
+                                    return (
+                                        <button key={idx} onClick={() => handleAnswer(idx)} disabled={isAnswered} className={`w-full p-4 rounded-xl border-2 text-start transition-all flex justify-between items-center ${btnStyle}`}>
+                                            <span>{opt}</span>
+                                            {isAnswered && idx === currentQ.correct && <CheckCircle size={20} className="text-green-600" />}
+                                            {isAnswered && idx === selectedOption && idx !== currentQ.correct && <XCircle size={20} className="text-red-600" />}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                            {isAnswered && (
+                                <div className={`mt-6 p-4 rounded-xl border-l-4 border-blue-500 animate-slide-up ${darkMode ? 'bg-slate-700' : 'bg-blue-50'}`}>
+                                    <h3 className="font-bold flex items-center gap-2 text-blue-600 dark:text-blue-300"><BookOpen size={18}/> {t.feedback}</h3>
+                                    <p className="mt-1 opacity-90">{content.exp}</p>
+                                </div>
+                            )}
+                        </div>
+                        {isAnswered && (
+                            <button onClick={handleNext} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 hover:scale-[1.02] transition mb-10">
+                                {currentQIndex < questions.length - 1 ? t.next : t.finish}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const ResultScreen = ({ darkMode, t, language, dir, gameData, examMode, userInfo, onRetry, onMenu, onNextSection, showNextSectionBtn, onHome, accumulatedScore, accumulatedTotal }) => {
+            // Logic: 
+            // 1. If ExamMode is 'comprehensive', use gameData directly (score/total from the single quiz attempt).
+            // 2. If ExamMode is 'single', and we have accumulated data, use it for the final score display.
+            
+            const finalScore = accumulatedTotal > 0 && examMode === 'single' ? accumulatedScore : gameData.score;
+            const finalTotal = accumulatedTotal > 0 && examMode === 'single' ? accumulatedTotal : gameData.total;
+            
+            const percentage = finalTotal > 0 ? Math.round((finalScore / finalTotal) * 100) : 0;
+            const passed = percentage >= 85;
+            
+            const isComprehensive = examMode === 'comprehensive';
+            // Show certificate if Passed AND (Comprehensive OR Final Section of Chain in Single Mode)
+            const isFinalSectionInChain = !showNextSectionBtn && examMode === 'single'; 
+            const showCertificate = passed && (isComprehensive || isFinalSectionInChain);
+            
+            const todayDate = new Date().toLocaleDateString('en-GB');
+            const handlePrint = () => window.print();
+
+            return (
+                <div className={`min-h-screen flex flex-col items-center p-4 ${darkMode ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'}`} dir={dir}>
+                    <div className="absolute top-4 left-4"> 
+                        <button onClick={onHome} className="p-2 rounded-full bg-white dark:bg-slate-800 shadow hover:scale-110 transition"><Home size={20} className="text-blue-600" /></button> 
+                    </div>
+                    <div className="w-full max-w-2xl flex-grow flex flex-col items-center justify-center text-center space-y-6">
+                        <div className="mb-4 relative">
+                           {passed ? 
+                             <div className="relative">
+                               <div className="absolute inset-0 bg-yellow-400 blur-2xl opacity-30 rounded-full"></div>
+                               <Trophy size={128} className="w-32 h-32 text-yellow-500 relative z-10 animate-bounce-slow" />
+                             </div> 
+                             : 
+                             <AlertTriangle size={128} className="w-32 h-32 text-red-500 animate-pulse" />
+                           }
+                        </div>
+                        <h1 className={`text-3xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>{passed ? t.pass_msg : t.fail_msg}</h1>
+                        <div className="text-6xl font-black my-4">{percentage}%</div>
+                        
+                        <div className={`w-full p-6 rounded-2xl text-start ${darkMode ? 'bg-slate-800' : 'bg-white shadow-lg'}`}>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 border-b pb-2"><Activity/> {t.analysis}</h3>
+                            <p className="mb-2"><strong>{t.score} ({isComprehensive ? 'Comprehensive' : 'Cumulative/Section'}):</strong> {finalScore} / {finalTotal}</p>
+                            {gameData.incorrectQuestions.length > 0 && (
+                                <div className="mt-4">
+                                    <p className="text-red-500 font-bold mb-2">Focus Areas (This Section/Attempt):</p>
+                                    <ul className="list-disc list-inside space-y-1 opacity-80 text-sm">
+                                        {gameData.incorrectQuestions.map((q, i) => <li key={i}>{q.content[language].q.substring(0, 50)}...</li>)}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col w-full gap-3 mt-6">
+                            {showCertificate ? (
+                                <button onClick={handlePrint} className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-xl font-bold text-lg shadow-lg hover:scale-105 transition flex items-center justify-center gap-2"><Printer /> {t.cert_download}</button>
+                            ) : (
+                                <>
+                                   {/* If failed, show retry */}
+                                   {!passed && (
+                                      <button onClick={onRetry} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition">{t.retry}</button>
+                                   )}
+                                </>
+                            )}
+
+                            {/* "Next Section" Button Logic: Show if there is a next section, regardless of pass/fail of this specific section, allowing user to continue learning */}
+                            {!isComprehensive && showNextSectionBtn && (
+                                <button onClick={onNextSection} className="w-full py-4 bg-green-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-2"><PlayCircle /> {t.next_section}</button>
+                            )}
+
+                            <button onClick={onMenu} className="w-full py-3 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-white rounded-xl font-bold hover:bg-gray-300 transition flex items-center justify-center gap-2"><Home size={20}/> {t.back}</button>
+                        </div>
+                    </div>
+                    
+                    {/* Certificate View (Hidden unless printed) */}
+                    {showCertificate && (
+                        <Certificate user={userInfo} score={finalScore} total={finalTotal} date={todayDate} />
+                    )}
+                </div>
+            );
+        };
+
+        const NursingHeroesGame = () => {
+            const [gameState, setGameState] = useState('landing'); 
+            const [language, setLanguage] = useState('ar');
+            const [userInfo, setUserInfo] = useState({ name: '', id: '', dept: '' });
+            const [activeCategory, setActiveCategory] = useState(null);
+            const [examMode, setExamMode] = useState('single'); 
+            const [darkMode, setDarkMode] = useState(false);
+            // This is for the current attempt/section's score
+            const [gameData, setGameData] = useState({ score: 0, total: 0, incorrectQuestions: [] });
+            
+            // Cumulative stats for section-by-section play
+            const [cumulativeData, setCumulativeData] = useState({ score: 0, total: 0 });
+
+            // Progress State
+            const [resumeData, setResumeData] = useState(null);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('nursingHeroState');
+                if (saved) {
+                    try {
+                        const parsedData = JSON.parse(saved);
+                        setResumeData(parsedData);
+                        // Optional: Restore language if needed, but the current UI flow asks for it.
+                        if (parsedData.language) setLanguage(parsedData.language);
+                    } catch(e) { console.error("Load error", e); }
+                }
+            }, []);
+
+            const handleResume = () => {
+                if(resumeData) {
+                    // Note: Resume will start the PlayingScreen with the last saved state for the quiz
+                    setGameState('playing');
+                    setActiveCategory(resumeData.activeCategory);
+                    // Pass initial state to PlayingScreen via props
+                    setResumeData(resumeData); // Ensure it's ready for PlayingScreen to consume
+                }
+            }
+
+            const t = uiText[language];
+            const dir = language !== 'en' ? 'rtl' : 'ltr';
+            const toggleDarkMode = () => setDarkMode(!darkMode);
+
+            const handleFinishSection = (score, total, incorrectQuestions) => {
+                // If it was a single section exam, accumulate the score
+                if (examMode === 'single') {
+                    setCumulativeData(prev => ({
+                        score: prev.score + score,
+                        total: prev.total + total
+                    }));
+                } else {
+                    // Reset cumulative for a fresh comprehensive attempt
+                    setCumulativeData({ score: 0, total: 0 });
+                }
+                
+                // Set current game data for result screen
+                setGameData({ score, total, incorrectQuestions });
+                setGameState('result');
+            };
+
+            const handleNextSection = () => {
+                const currentIndex = categories.findIndex(c => c.id === activeCategory);
+                if (currentIndex !== -1 && currentIndex < categories.length - 1) {
+                    const nextCat = categories[currentIndex + 1];
+                    setActiveCategory(nextCat.id);
+                    // Reset current quiz data for the new section
+                    setGameData({ score: 0, total: 0, incorrectQuestions: [] });
+                    setResumeData(null); // Clear resume data for new flow
+                    setGameState('playing');
+                } else {
+                    // If no next section, go to menu. The result screen will show final cumulative score.
+                    setGameState('menu');
+                }
+            };
+
+            const hasNextSection = () => {
+                if (examMode === 'comprehensive') return false;
+                const currentIndex = categories.findIndex(c => c.id === activeCategory);
+                return currentIndex !== -1 && currentIndex < categories.length - 1;
+            };
+            
+            const goHome = () => {
+                setCumulativeData({ score: 0, total: 0 }); // Reset cumulative on going to main menu
+                setResumeData(null); // Clear saved progress
+                localStorage.removeItem('nursingHeroState');
+                setGameState('menu');
+            };
+
+            const handleRetry = () => {
+                // If single exam, reset the current section attempt (by resetting gameData)
+                // If comprehensive exam, reset the entire comprehensive attempt (by resetting gameData)
+                
+                // For simplicity, we just reset the current section/attempt data, and rely on the user to go back to the menu if they want a full reset.
+                setGameData({ score: 0, total: 0, incorrectQuestions: [] }); 
+                setResumeData(null); 
+                localStorage.removeItem('nursingHeroState'); 
+                setGameState('playing');
+            };
+
+            return (
+                <ErrorBoundary>
+                    {gameState === 'landing' && <LandingScreen darkMode={darkMode} t={t} onStart={() => setGameState('user_info')} toggleDarkMode={toggleDarkMode} hospital_name={uiText.en.hospital_name} admin_name={uiText.en.admin_name} edu_name={uiText.en.edu_name} hero_slogan={uiText.ar.hero_slogan} hero_slogan_en={uiText.en.hero_slogan} hasSavedState={!!resumeData} onResume={handleResume} />}
+                    {gameState === 'user_info' && <UserInfoScreen darkMode={darkMode} t={uiText.mix} userInfo={userInfo} setUserInfo={setUserInfo} onNext={() => setGameState('language')} onHome={() => setGameState('landing')} />}
+                    {gameState === 'language' && <LanguageScreen darkMode={darkMode} setLanguage={setLanguage} onNext={() => setGameState('menu')} onHome={() => setGameState('landing')} />}
+                    {gameState === 'menu' && <MenuScreen darkMode={darkMode} t={t} language={language} dir={dir} toggleDarkMode={toggleDarkMode} setUserInfoView={() => setGameState('user_info')} setExamMode={setExamMode} setGameData={setGameData} setActiveCategory={setActiveCategory} setGameState={setGameState} overallScore={cumulativeData.score} overallTotal={cumulativeData.total} />}
+                    
+                    {gameState === 'playing' && 
+                        <PlayingScreen 
+                            darkMode={darkMode} 
+                            t={t} 
+                            language={language} 
+                            dir={dir} 
+                            activeCategory={activeCategory} 
+                            // Pass initial state from resumeData if available and matches activeCategory
+                            initialQIndex={resumeData && resumeData.activeCategory === activeCategory ? resumeData.currentQIndex : 0}
+                            initialScore={resumeData && resumeData.activeCategory === activeCategory ? resumeData.score : 0}
+                            initialTotal={resumeData && resumeData.activeCategory === activeCategory ? resumeData.total : 0}
+                            onFinish={handleFinishSection} 
+                            onBack={() => setGameState('menu')} 
+                        />
+                    }
+                    
+                    {gameState === 'result' && <ResultScreen 
+                        darkMode={darkMode} 
+                        t={t} 
+                        language={language} 
+                        dir={dir} 
+                        gameData={gameData} 
+                        examMode={examMode} 
+                        userInfo={userInfo} 
+                        onRetry={handleRetry} 
+                        onMenu={goHome} 
+                        onNextSection={handleNextSection} 
+                        showNextSectionBtn={hasNextSection()} 
+                        onHome={goHome}
+                        accumulatedScore={cumulativeData.score}
+                        accumulatedTotal={cumulativeData.total}
+                    />}
+                </ErrorBoundary>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<NursingHeroesGame />);
+    </script>
+</body>
+</html>
