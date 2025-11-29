@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوستر كرات القوة الخارقة - مفصل</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #FF9F1C; /* برتقالي حيوي للطاقة */
+            --secondary-color: #2EC4B6; /* تركواز للهدوء والتركيز */
+            --accent-color: #5D4037; /* بني للشوكولاتة والمكسرات */
+            --bg-color: #FFF8E1; /* خلفية كريمي دافئة */
+            --text-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #eee;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .poster-container {
+            width: 210mm;
+            min-height: 297mm; /* A4 size, min-height to accommodate content */
+            background-color: var(--bg-color);
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 8px solid var(--primary-color);
+            border-radius: 20px;
+        }
+
+        /* --- Header Section --- */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #FFBF69);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 5px solid white;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .subtitle {
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            background: white;
+            color: var(--primary-color);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+        }
+        
+        .measurement-note {
+            font-size: 12px;
+            color: #fff;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        /* --- Main Content Grid --- */
+        .content {
+            flex: 1;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto 1fr; /* Adjusted for images */
+            gap: 15px;
+        }
+
+        /* --- Ingredients Section --- */
+        .section-box {
+            background: white;
+            border-radius: 15px;
+            padding: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 2px solid transparent;
+        }
+
+        .dry-ingredients {
+            border-color: var(--accent-color);
+        }
+
+        .wet-ingredients {
+            border-color: var(--secondary-color);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dry-title { color: var(--accent-color); }
+        .wet-title { color: var(--secondary-color); }
+
+        .ingredient-list {
+            list-style: none;
+        }
+
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: var(--text-color);
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .icon {
+            font-size: 20px;
+            margin-left: 8px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .note {
+            font-size: 11px;
+            color: #777;
+            margin-right: 5px;
+            display: block; /* Ensure note is on new line */
+        }
+        
+        .measurement {
+            font-weight: bold;
+            color: var(--accent-color);
+            font-size: 13px;
+        }
+
+        /* --- Steps Section with Image --- */
+        .steps-section-image {
+            grid-column: 1 / -1;
+            background: #E0F7FA;
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px dashed var(--secondary-color);
+            text-align: center;
+        }
+        
+        .steps-image-container {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-top: 10px;
+        }
+        
+        .steps-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* --- Visual Representation --- */
+        .visual-area {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column; /* Stack images vertically if needed */
+            align-items: center;
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 0;
+            text-align: center;
+        }
+        
+        .final-product-image-container {
+            width: 100%;
+            max-width: 500px; /* Limit width for better look */
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        
+        .final-product-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .ball-label {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--accent-color);
+            margin-top: 5px;
+        }
+
+        /* --- Footer/Benefits --- */
+        .footer {
+            background: var(--accent-color);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: auto; /* Push footer to bottom */
+        }
+
+        .benefit-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .benefit-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* --- Print Optimizations --- */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .poster-container {
+                box-shadow: none;
+                border: 2px solid var(--primary-color);
+                height: auto; /* Allow height to adjust for print */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="poster-container">
+        
+        <!-- Header -->
+        <div class="header">
+            <h1>كرات القوة الخارقة ⚡</h1>
+            <div class="subtitle">للنمو والتركيز والمناعة (للأبطال من عمر 3-8 سنوات)</div>
+            <div class="measurement-note">💡 معيار الكوب المستخدم = 240 مل | ملعقة كبيرة = 15 مل | ملعقة صغيرة = 5 مل</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Dry Ingredients -->
+            <div class="section-box dry-ingredients">
+                <div class="section-title dry-title">
+                    <span>🥜</span> المكونات الجافة (تُطحن معاً)
+                </div>
+                <ul class="ingredient-list">
+                    <li class="ingredient-item">
+                        <span class="icon">🧠</span>
+                        <div>
+                            <strong>1 كوب مكسرات مشكلة</strong> <span class="measurement">(حوالي 150 جرام)</span>
+                            <span class="note">(جوز للدماغ، لوز للكالسيوم، كاجو للزنك)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🦴</span>
+                        <div>
+                            <strong>1/4 كوب سمسم محمص</strong> <span class="measurement">(حوالي 35 جرام)</span>
+                            <span class="note">(كنز الكالسيوم للعظام)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🎃</span>
+                        <div>
+                            <strong>1/4 كوب بذور القرع</strong> <span class="measurement">(حوالي 30 جرام)</span>
+                            <span class="note">(ماغنيسيوم للهدوء والراحة)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🐟</span>
+                        <div>
+                            <strong>2 ملعقة كبيرة بذور كتان</strong> <span class="measurement">(حوالي 20 جرام)</span>
+                            <span class="note">(أوميغا-3 للذكاء - تطحن طازجة)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🍫</span>
+                        <div>
+                            <strong>2 ملعقة كبيرة كاكاو خام</strong> <span class="measurement">(حوالي 15 جرام)</span>
+                            <span class="note">(اختياري: لطعم الشوكولاتة اللذيذ)</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Wet Ingredients -->
+            <div class="section-box wet-ingredients">
+                <div class="section-title wet-title">
+                    <span>🍯</span> المكونات الرطبة (للربط والتحلية)
+                </div>
+                <ul class="ingredient-list">
+                    <li class="ingredient-item">
+                        <span class="icon">🍇</span>
+                        <div>
+                            <strong>1/2 كوب زبيب</strong> <span class="measurement">(حوالي 80 جرام)</span>
+                            <span class="note">(مصدر الحديد - يفرم ناعماً جداً)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🥜</span>
+                        <div>
+                            <strong>1/2 كوب زبدة فول سوداني</strong> <span class="measurement">(حوالي 125 جرام)</span>
+                            <span class="note">(بروتين وطاقة)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🐝</span>
+                        <div>
+                            <strong>2-3 ملاعق كبيرة عسل سدر</strong> <span class="measurement">(حوالي 40-60 جرام)</span>
+                            <span class="note">(مناعة وتحلية طبيعية)</span>
+                        </div>
+                    </li>
+                    <li class="ingredient-item">
+                        <span class="icon">🍦</span>
+                        <div>
+                            <strong>1 ملعقة صغيرة فانيليا سائلة</strong> <span class="measurement">(5 مل)</span>
+                            <span class="note">(رائحة زكية تشبه الحلوى)</span>
+                        </div>
+                    </li>
+                </ul>
+                
+                <div style="margin-top: 15px; text-align: center; background: #fff3e0; padding: 8px; border-radius: 10px; font-size: 12px;">
+                    <strong>💡 سر الطعم:</strong> الفانيليا والكاكاو يجعلون الطعم لا يقاوم ويخفي طعم البذور!
+                </div>
+            </div>
+
+            <!-- Steps Section with Image -->
+            <div class="steps-section-image">
+                <div class="section-title" style="color: #00838F; justify-content: center;">
+                    👨‍🍳 خطوات التحضير المصورة
+                </div>
+                <div class="steps-image-container">
+                    <img src="image_0.png" alt="خطوات تحضير كرات الطاقة: الطحن، الخلط، العجن، التشكيل" class="steps-image">
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 13px; font-weight: bold; color: var(--accent-color);">
+                    <span style="flex: 1;">1. الطحن</span>
+                    <span style="flex: 1;">2. الخلط</span>
+                    <span style="flex: 1;">3. العجن</span>
+                    <span style="flex: 1;">4. التشكيل</span>
+                </div>
+            </div>
+
+             <!-- Visuals (Final Product) -->
+             <div class="visual-area">
+                 <div class="section-title" style="color: var(--accent-color);">
+                    ✨ الشكل النهائي للكرات
+                </div>
+                <div class="final-product-image-container">
+                    <img src="image_1.png" alt="كرات الطاقة النهائية متنوعة النكهات" class="final-product-image">
+                </div>
+                <div class="ball-label">كرات الطاقة جاهزة للأكل! (سادة، جوز هند، سمسم)</div>
+            </div>
+
+        </div>
+
+        <!-- Footer Benefits -->
+        <div class="footer">
+            <div class="benefit-badge">
+                <span class="benefit-icon">🛡️</span>
+                <span>مناعة حديدية</span>
+            </div>
+            <div class="benefit-badge">
+                <span class="benefit-icon">🚀</span>
+                <span>تركيز عالي</span>
+            </div>
+            <div class="benefit-badge">
+                <span class="benefit-icon">😌</span>
+                <span>هدوء ونوم مريح</span>
+            </div>
+            <div class="benefit-badge">
+                <span class="benefit-icon">🦴</span>
+                <span>عظام قوية</span>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
